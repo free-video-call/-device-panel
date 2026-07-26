@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#070a12">
+<title>DeviceOps</title>
+<style>
+/* ============================================================
+   CONFIGURATION — design tokens
+   ============================================================ */
+:root{
+  --bg:#070a12;
+  --bg-2:#0b1120;
+  --surface:rgba(16,21,33,.86);
+  --surface-solid:#111726;
+  --surface-2:#151c2c;
+  --line:rgba(255,255,255,.08);
+  --text:#f5f7ff;
+  --muted:#8b93a8;
+
+  --indigo:#5b6bff;
+  --indigo-soft:rgba(91,107,255,.14);
+  --mint:#34e0a1;
+  --mint-soft:rgba(52,224,161,.12);
+  --violet:#a78bfa;
+  --violet-soft:rgba(167,139,250,.12);
+  --amber:#ffb648;
+  --amber-soft:rgba(255,182,72,.12);
+  --cyan:#38d4e8;
+  --red:#ff6b7a;
+  --red-soft:rgba(255,107,122,.12);
+
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-7:32px;
+  --r-sm:10px;--r-md:14px;--r-lg:20px;--r-xl:28px;--r-pill:999px;
+  --shadow:0 20px 60px rgba(0,0,0,.34);
+  --focus:0 0 0 3px rgba(91,107,255,.35);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+html,body{overscroll-behavior-y:none}
+body{
+  margin:0;min-height:100vh;color:var(--text);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:
+    radial-gradient(circle at 10% -6%,rgba(91,107,255,.16),transparent 30%),
+    radial-gradient(circle at 92% 6%,rgba(167,139,250,.12),transparent 32%),
+    radial-gradient(circle at 50% 100%,rgba(52,224,161,.06),transparent 32%),
+    linear-gradient(180deg,#050710 0%,#090e1a 48%,#050710 100%);
+  overflow-x:hidden;
+  -webkit-tap-highlight-color:transparent;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.15;
+  background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),
+                    linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
+  background-size:36px 36px;
+  mask-image:linear-gradient(to bottom,black,transparent 70%);
+}
+body.scroll-locked{position:fixed;left:0;right:0;overflow:hidden}
+button,input,textarea{font:inherit}
+button{cursor:pointer;touch-action:manipulation}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:none;box-shadow:var(--focus)}
+button[disabled]{cursor:not-allowed;opacity:.45}
+input,textarea{font-size:16px} /* prevents iOS Safari auto-zoom on focus */
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
+body.force-reduced-motion *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+
+.app{max-width:900px;margin:auto;min-height:100vh;padding-bottom:calc(140px + env(safe-area-inset-bottom))}
+.page{display:none}
+.page.active{display:block;animation:fadeIn .22s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ---------- topbar ---------- */
+.topbar{
+  position:sticky;top:0;z-index:40;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:calc(var(--space-4) + env(safe-area-inset-top)) var(--space-5) var(--space-4);
+  background:linear-gradient(180deg,rgba(5,7,16,.95),rgba(5,7,16,.78));
+  border-bottom:1px solid var(--line);
+  backdrop-filter:blur(20px);
+}
+.brand{display:flex;align-items:center;gap:var(--space-3)}
+.logo{
+  width:42px;height:42px;border-radius:var(--r-md);display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--indigo),var(--violet));
+  box-shadow:0 10px 30px rgba(91,107,255,.3);font-size:16px;font-weight:900;color:#fff;
+}
+.brand h1{font-size:19px;margin:0;letter-spacing:-.4px}
+.brand p{font-size:11px;color:var(--muted);margin:2px 0 0}
+.top-actions{display:flex;gap:var(--space-2);align-items:center}
+.user-chip{display:none;align-items:center;gap:8px;padding:6px 10px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);font-size:11px;color:#c9cfdb;max-width:180px}
+.user-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(min-width:760px){.user-chip{display:flex}}
+.icon-btn{
+  width:42px;height:42px;border-radius:var(--r-md);border:1px solid var(--line);
+  background:var(--surface);color:#c9cfdb;font-size:16px;position:relative;
+}
+.badge{position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 10px rgba(255,107,122,.8);display:none}
+.badge.show{display:block}
+
+/* ---------- hero ---------- */
+.hero{padding:var(--space-5) var(--space-4) 0}
+.hero-card{
+  position:relative;overflow:hidden;padding:var(--space-6);border:1px solid rgba(255,255,255,.09);
+  border-radius:var(--r-xl);
+  background:radial-gradient(circle at 90% 6%,rgba(91,107,255,.18),transparent 28%),
+             radial-gradient(circle at 78% 80%,rgba(167,139,250,.12),transparent 30%),
+             linear-gradient(150deg,#141d31,#0a0f1c);
+  box-shadow:var(--shadow);
+}
+.hero-row{display:flex;justify-content:space-between;gap:var(--space-4)}
+.eyebrow{display:block;color:#8fb0ff;font-size:10px;font-weight:800;letter-spacing:1.4px;margin-bottom:var(--space-2)}
+.hero h2{margin:0;font-size:27px;letter-spacing:-.8px;line-height:1.15}
+.hero p{margin:var(--space-2) 0 0;color:#aab2c3;font-size:13px;line-height:1.5;max-width:420px}
+.health-ring{width:78px;height:78px;border-radius:50%;display:grid;place-items:center;position:relative;flex:none;background:conic-gradient(var(--mint) 0 0%,#212c40 0)}
+.health-ring::after{content:"";position:absolute;inset:9px;border-radius:50%;background:linear-gradient(150deg,#101928,#0a111c);border:1px solid rgba(255,255,255,.06)}
+.health-ring span{position:relative;z-index:1;font-size:18px;font-weight:900}
+.health-label{text-align:center;font-size:9px;color:var(--muted);margin-top:6px}
+.live-row{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);margin-top:var(--space-5);flex-wrap:wrap}
+.live-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:var(--r-pill);font-size:11px;font-weight:800;color:#7cf0c3;background:var(--mint-soft);border:1px solid rgba(52,224,161,.28)}
+.live-pill.offline{color:#ffcf94;background:var(--amber-soft);border-color:rgba(255,182,72,.3)}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 10px var(--mint);animation:pulse 1.8s infinite}
+.live-pill.offline .live-dot{background:var(--amber);box-shadow:0 0 10px var(--amber)}
+@keyframes pulse{50%{transform:scale(1.3);opacity:.6}}
+.sync-time{font-size:10px;color:var(--muted)}
+.hero-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-2);margin-top:var(--space-4)}
+.hero-summary div{padding:10px 11px;border-radius:var(--r-md);background:rgba(5,9,17,.5);border:1px solid rgba(255,255,255,.06)}
+.hero-summary span{display:block;color:var(--muted);font-size:9px;letter-spacing:.4px}
+.hero-summary b{display:block;font-size:18px;margin-top:3px}
+.hero-actions{display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-5)}
+.btn{border-radius:var(--r-md);border:1px solid #2b3446;background:#141b28;color:#e8edf6;padding:11px 15px;font-size:12px;font-weight:800;display:inline-flex;align-items:center;gap:6px}
+.btn.primary{color:#9fb0ff;border-color:rgba(91,107,255,.4);background:var(--indigo-soft)}
+.btn[disabled]{background:#111722;color:#66708a;border-color:#232b3a}
+
+/* ---------- status strip ---------- */
+.status-strip{margin:var(--space-4) var(--space-4) 0;padding:var(--space-3) var(--space-4);display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);border:1px solid var(--line);border-radius:var(--r-lg);background:rgba(13,18,29,.7);flex-wrap:wrap}
+.status-left,.status-right{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:11px}
+.status-left b{color:var(--text)}
+.connection-warning{display:none;margin:var(--space-3) var(--space-4) 0;padding:11px 13px;border-radius:var(--r-md);border:1px solid rgba(255,182,72,.32);background:var(--amber-soft);color:#ffcf94;font-size:11px}
+.connection-warning.show{display:block}
+
+/* ---------- stats ---------- */
+.stats{display:flex;gap:var(--space-3);overflow-x:auto;padding:var(--space-4);scroll-snap-type:x proximity;scrollbar-width:none}
+.stats::-webkit-scrollbar{display:none}
+.stat{min-width:150px;scroll-snap-align:start;padding:var(--space-4);border-radius:var(--r-lg);border:1px solid var(--line);background:linear-gradient(150deg,var(--surface),rgba(10,14,23,.9));flex:none}
+.stat-icon{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-size:13px}
+.stat.indigo .stat-icon{background:var(--indigo-soft);color:#9fb0ff}
+.stat.mint .stat-icon{background:var(--mint-soft);color:var(--mint)}
+.stat.amber .stat-icon{background:var(--amber-soft);color:var(--amber)}
+.stat.violet .stat-icon{background:var(--violet-soft);color:var(--violet)}
+.stat b{font-size:24px;display:block;margin-top:10px;letter-spacing:-.5px}
+.stat span{font-size:10px;color:var(--muted);letter-spacing:.5px}
+
+/* ---------- panels / quick actions ---------- */
+.content-grid{padding:0 var(--space-4)}
+.panel{border-radius:var(--r-lg);border:1px solid var(--line);background:var(--surface);margin-bottom:var(--space-3)}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:var(--space-4) var(--space-4) var(--space-2)}
+.panel-head h3{margin:0;font-size:16px}
+.panel-head span{color:var(--muted);font-size:11px}
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);padding:0 var(--space-3) var(--space-3)}
+.quick{min-height:80px;border-radius:var(--r-md);border:1px solid #232c3d;background:#111826;color:#fff;text-align:left;padding:12px}
+.quick strong{display:block;font-size:14px;margin-top:6px}
+.quick span{font-size:10px;color:var(--muted)}
+.quick-icon{font-size:16px;color:var(--indigo-l,#8fb0ff)}
+
+/* ---------- action dock ---------- */
+.action-dock{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-2);margin:0 var(--space-4) var(--space-4);padding:var(--space-2);border:1px solid var(--line);border-radius:var(--r-lg)}
+.action-dock button{border:0;border-radius:12px;background:rgba(255,255,255,.03);color:#dce3ef;min-height:60px}
+.action-dock strong{display:block;font-size:16px;color:#8fb0ff;margin-bottom:3px}
+.action-dock span{font-size:9px;font-weight:700}
+
+/* ---------- toolbar / filters ---------- */
+.toolbar{margin:0 var(--space-4) var(--space-3);padding:var(--space-2);display:grid;grid-template-columns:1fr auto auto;gap:var(--space-2);border:1px solid var(--line);border-radius:var(--r-lg);background:#0d1119;position:relative}
+.search{display:flex;align-items:center;gap:8px;padding:0 12px;border:1px solid #263048;border-radius:12px;background:#121824;color:#7e8797}
+.search input{width:100%;border:0;outline:0;background:transparent;color:#fff;padding:12px 0}
+.toolbar button{min-width:46px;min-height:44px}
+.filter-menu{position:absolute;right:var(--space-2);top:calc(100% + 6px);width:200px;padding:8px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface-solid);box-shadow:var(--shadow);z-index:45;display:none}
+.filter-menu.open{display:block}
+.filter-option{width:100%;border:0;background:transparent;color:#cfd5df;text-align:left;padding:10px;border-radius:9px;font-size:12px;min-height:40px}
+.filter-option:hover,.filter-option.active{background:var(--indigo-soft);color:#9fb0ff}
+.smart-chips{display:flex;gap:8px;overflow-x:auto;padding:0 var(--space-4) var(--space-3);scrollbar-width:none}
+.smart-chips::-webkit-scrollbar{display:none}
+.smart-chip{flex:none;border:1px solid #29334a;border-radius:var(--r-pill);background:#111826;color:#aeb7c8;padding:9px 12px;font-size:10px;font-weight:800;min-height:36px}
+.smart-chip.active{color:#9fb0ff;border-color:rgba(91,107,255,.45);background:var(--indigo-soft)}
+.smart-chip b{font-size:9px;padding:2px 6px;border-radius:var(--r-pill);background:rgba(255,255,255,.07);margin-left:4px}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px}
+.dot.mint{background:var(--mint)}.dot.amber{background:var(--amber)}.dot.violet{background:var(--violet)}
+
+/* ---------- device section ---------- */
+.section-head{display:flex;align-items:center;justify-content:space-between;padding:0 var(--space-4) var(--space-3)}
+.section-head h3{margin:0;font-size:17px}
+.view-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surface-solid);color:#8b94a5}
+.view-btn.active{color:#8fb0ff;border-color:rgba(91,107,255,.35)}
+.device-list{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);padding:0 var(--space-4)}
+body.compact .device-list{grid-template-columns:1fr}
+@media(max-width:640px){.device-list{grid-template-columns:1fr}}
+
+.device{border-radius:var(--r-lg);border:1px solid #202a3c;padding:14px;background:linear-gradient(150deg,#111927,#0b111c);position:relative;overflow:hidden}
+.device::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,rgba(91,107,255,.35),transparent)}
+.device.offline{border-color:#2c2a24}
+.device-top{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center}
+.device-avatar{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(150deg,#1c2536,#141b28);border:1px solid #2b3850;font-size:16px;position:relative}
+.device-avatar::after{content:"";position:absolute;right:-1px;bottom:1px;width:9px;height:9px;border-radius:50%;background:var(--mint);border:2px solid #0e1420}
+.device.offline .device-avatar::after{background:var(--amber)}
+.device h4{margin:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.device-meta{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.chip{padding:4px 7px;border-radius:7px;border:1px solid #2b3448;background:#131a26;color:#9ba3b1;font-size:9px;font-weight:700;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.status-online{color:#7ff0c3;border-color:rgba(52,224,161,.35)}
+.chip.status-offline{color:#ffcf94;border-color:rgba(255,182,72,.35)}
+.chip.pending{color:#c8b3ff;border-color:rgba(167,139,250,.4)}
+.chip.alert{color:#ffcf94;border-color:rgba(255,182,72,.4)}
+.battery{text-align:right;font-size:13px;font-weight:800}
+.battery.high{color:var(--mint)}.battery.mid{color:var(--amber)}.battery.low{color:var(--red)}
+.battery small{display:block;color:var(--muted);font-size:9px;margin-top:2px;font-weight:600}
+.device-data{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:11px}
+@media(max-width:390px){.device-data{grid-template-columns:1fr}}
+.data{padding:9px;border-radius:11px;border:1px solid #232d40;background:#0d131e;overflow:hidden}
+.data span{font-size:8px;color:var(--muted);letter-spacing:.4px;display:block}
+.data b{font-size:11px;display:block;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.note-preview{margin-top:9px;padding:9px 11px;border:1px solid #263048;border-radius:12px;background:#0d131e;color:#aeb7c7;font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+.note-preview b{color:#c8cfdd}
+.device-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:11px}
+@media(max-width:640px){.device-actions{grid-template-columns:repeat(2,1fr)}}
+.device-actions button{min-height:48px;border-radius:12px;border:1px solid #232d40;background:#111826;color:#8da8ff;font-size:9px;font-weight:800;position:relative;transition:transform .12s ease}
+.device-actions button:active{transform:scale(.96)}
+.device-actions button strong{display:block;font-size:14px;margin-bottom:3px}
+.device-actions .act-pending{color:var(--violet)!important;border-color:rgba(167,139,250,.4)!important}
+.action-loading{color:transparent!important}
+.action-loading::after{content:"";position:absolute;width:14px;height:14px;border-radius:50%;border:2px solid #8da8ff;border-right-color:transparent;top:50%;left:50%;margin:-8px 0 0 -8px;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.empty-state,.skeleton-wrap{grid-column:1/-1}
+.empty-state{text-align:center;padding:40px 20px;border:1px dashed #2b3648;border-radius:var(--r-lg);background:rgba(13,18,28,.5)}
+.empty-state strong{display:block;font-size:15px;margin-bottom:6px}
+.empty-state span{color:var(--muted);font-size:12px}
+.empty-state.error strong{color:var(--red)}
+.skeleton-card{border-radius:var(--r-lg);border:1px solid #202a3c;padding:14px;background:#111826;height:150px}
+.skeleton-bar{height:12px;border-radius:6px;margin-bottom:8px;background:linear-gradient(90deg,#182233 25%,#212c40 37%,#182233 63%);background-size:400% 100%;animation:shimmer 1.4s infinite}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+
+/* ---------- settings ---------- */
+.settings{padding:var(--space-5) var(--space-4)}
+.settings-title{margin:0 0 4px;font-size:24px}
+.settings-sub{margin:0 0 var(--space-5);color:var(--muted);font-size:13px}
+.setting-card{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface-solid);margin-bottom:var(--space-3);overflow:hidden}
+.setting-head{width:100%;padding:var(--space-4);border:0;background:transparent;color:#fff;display:grid;grid-template-columns:40px 1fr auto;gap:11px;align-items:center;text-align:left;min-height:64px}
+.setting-icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:16px}
+.setting-icon.indigo{background:var(--indigo-soft);color:#9fb0ff}
+.setting-icon.mint{background:var(--mint-soft);color:var(--mint)}
+.setting-icon.amber{background:var(--amber-soft);color:var(--amber)}
+.setting-icon.violet{background:var(--violet-soft);color:var(--violet)}
+.setting-name{font-size:15px;font-weight:800}
+.setting-desc{font-size:11px;color:var(--muted);margin-top:3px}
+.chev{color:#8a93a4;transition:.2s}
+.setting-card.open .chev{transform:rotate(180deg)}
+.setting-body{display:none;padding:0 var(--space-4) var(--space-4)}
+.setting-card.open .setting-body{display:block}
+.divider{height:1px;background:#232a37;margin-bottom:11px}
+.option{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid #202632}
+.option:last-child{border-bottom:0}
+.option b{display:block;font-size:13px}
+.option span{display:block;color:var(--muted);font-size:10px;margin-top:3px}
+.switch{width:42px;height:25px;border:0;border-radius:99px;background:#2c3342;position:relative;flex:none}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:#fff;transition:.2s}
+.switch.on{background:var(--mint)}
+.switch.on::after{left:20px}
+.soon-pill{font-size:9px;font-weight:800;color:#828cab;background:#1a2130;border:1px solid #2a3244;padding:5px 9px;border-radius:var(--r-pill);flex:none}
+.field{margin-bottom:10px}
+.field label{display:block;color:var(--muted);font-size:10px;margin-bottom:5px}
+.field input{width:100%;padding:12px;border-radius:11px;border:1px solid #2b3442;background:#0c121b;color:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.small-btn{padding:11px 13px;border-radius:11px;border:1px solid #2f3848;background:#171d29;color:#e8ebf2;min-height:44px;font-weight:700;font-size:12px}
+.small-btn.primary{color:#9fb0ff;border-color:rgba(91,107,255,.4);background:var(--indigo-soft)}
+.small-btn.danger{color:#ff8e9a;border-color:#5a2f38;background:var(--red-soft)}
+
+/* ---------- overlay / drawer / notif ---------- */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80;opacity:0;pointer-events:none;transition:.2s}
+.overlay.show{opacity:1;pointer-events:auto}
+.drawer,.notif{position:fixed;top:0;right:-420px;width:min(400px,100%);height:100vh;height:100dvh;z-index:90;background:rgba(9,13,21,.97);border-left:1px solid var(--line);backdrop-filter:blur(20px);transition:right .26s ease;box-shadow:-20px 0 60px rgba(0,0,0,.4);padding:var(--space-5);padding-top:calc(var(--space-5) + env(safe-area-inset-top));padding-bottom:calc(var(--space-5) + env(safe-area-inset-bottom));overflow:auto}
+.drawer.open,.notif.open{right:0}
+.drawer-head,.notif-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-5)}
+.drawer-head h3,.notif-head h3{margin:0;font-size:19px}
+.close{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--surface-solid);color:#ccd2dd;flex:none}
+.detail-card{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface-solid);padding:14px;margin-bottom:var(--space-3)}
+.detail-title{display:flex;align-items:center;gap:11px}
+.detail-title h4{margin:0;font-size:15px}
+.detail-title p{margin:3px 0 0;color:var(--muted);font-size:11px}
+.timeline{display:grid;gap:9px}
+.timeline-item{display:grid;grid-template-columns:8px 1fr;gap:9px}
+.timeline-dot{width:7px;height:7px;border-radius:50%;background:var(--indigo);margin-top:5px}
+.timeline-item b{font-size:12px}
+.timeline-item span{font-size:10px;color:var(--muted);display:block;margin-top:2px}
+.notif-item{border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface-solid);padding:12px;margin-bottom:9px;display:flex;gap:10px;align-items:flex-start}
+.notif-item .n-icon{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:13px;flex:none}
+.notif-item b{font-size:13px;display:block}
+.notif-item p{font-size:11px;color:var(--muted);margin:4px 0 0}
+
+/* ---------- fab ---------- */
+.fab{position:fixed;right:20px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:50;width:54px;height:54px;border-radius:18px;border:1px solid rgba(91,107,255,.35);background:linear-gradient(135deg,var(--indigo),var(--violet));color:#fff;font-size:22px;box-shadow:0 15px 34px rgba(91,107,255,.28)}
+.fab-menu{position:fixed;right:20px;bottom:calc(158px + env(safe-area-inset-bottom));z-index:49;display:grid;gap:8px;opacity:0;pointer-events:none;transform:translateY(10px);transition:.18s}
+.fab-menu.open{opacity:1;pointer-events:auto;transform:none}
+.fab-menu button{padding:11px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface-solid);color:#fff;box-shadow:var(--shadow);font-size:11px;text-align:left;min-width:170px;min-height:44px;font-weight:700}
+
+/* ---------- bottom nav ---------- */
+.bottom-nav{position:fixed;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(560px,calc(100% - 20px));z-index:60;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:7px;border-radius:var(--r-xl);background:rgba(9,13,22,.92);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(20px);box-shadow:0 16px 46px rgba(0,0,0,.45)}
+.nav-btn{min-height:56px;border:0;border-radius:15px;background:transparent;color:#7d879a;font-size:10px;font-weight:800}
+.nav-btn strong{display:block;font-size:16px;margin-bottom:3px}
+.nav-btn.active{background:var(--indigo-soft);color:#9fb0ff}
+
+/* ---------- toast ---------- */
+.toast{position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(14px);max-width:min(320px,86vw);padding:12px 15px;border-radius:12px;background:#151c28;border:1px solid #2d3543;opacity:0;transition:.2s;z-index:150;font-size:12px;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.toast.success{border-color:rgba(52,224,161,.4);color:#9ff0cc}
+.toast.error{border-color:rgba(255,107,122,.45);color:#ffb0b8}
+
+/* ---------- bottom sheet (single centralized manager) ---------- */
+.sheet-modal{position:fixed;inset:0;z-index:130;display:none;align-items:flex-end;justify-content:center;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom));background:rgba(0,0,0,.56);backdrop-filter:blur(8px)}
+.sheet-modal.open{display:flex}
+.sheet{width:min(480px,100%);max-height:min(80vh,620px);overflow:auto;border:1px solid rgba(255,255,255,.1);border-radius:24px 24px 20px 20px;background:linear-gradient(180deg,#141c2a,#0c111c);padding:20px;box-shadow:0 30px 90px rgba(0,0,0,.55);animation:sheetIn .2s ease}
+@keyframes sheetIn{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+.sheet h3{margin:0 0 5px;font-size:19px}
+.sheet p{margin:0 0 15px;color:var(--muted);font-size:12px;line-height:1.5;white-space:pre-line;max-height:40vh;overflow:auto}
+.sheet textarea,.sheet input{width:100%;border:1px solid #2c3748;border-radius:14px;background:#0b111a;color:#fff;padding:13px;outline:none;resize:vertical;min-height:48px}
+.sheet textarea{min-height:110px}
+.sheet-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}
+.sheet-actions button{min-height:48px}
+
+/* ---------- auth screen ---------- */
+.auth-screen{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:22px;background:radial-gradient(circle at 20% 0%,rgba(91,107,255,.16),transparent 32%),radial-gradient(circle at 100% 20%,rgba(167,139,250,.14),transparent 30%),#070a12}
+.auth-card{width:min(420px,100%);border:1px solid var(--line);border-radius:var(--r-xl);padding:26px;background:linear-gradient(150deg,rgba(20,28,42,.97),rgba(11,15,24,.97));box-shadow:var(--shadow)}
+.auth-logo{width:54px;height:54px;border-radius:17px;display:grid;place-items:center;margin-bottom:18px;background:linear-gradient(135deg,var(--indigo),var(--violet));font-size:20px;font-weight:900;color:#fff}
+.auth-card h2{margin:0;font-size:25px;letter-spacing:-.6px}
+.auth-card p{color:var(--muted);font-size:13px;line-height:1.5;margin:8px 0 20px}
+.auth-field{display:block;margin:12px 0}
+.auth-field span{display:block;font-size:11px;color:#aeb6c6;margin:0 0 7px 3px;font-weight:700}
+.auth-field input{width:100%;padding:14px;border-radius:14px;border:1px solid #2b3444;outline:0;background:#0d141e;color:#fff}
+.auth-field input:focus{border-color:rgba(91,107,255,.55)}
+.auth-submit{width:100%;padding:14px;border:1px solid rgba(91,107,255,.4);border-radius:14px;background:var(--indigo-soft);color:#9fb0ff;font-weight:800;margin-top:10px;min-height:50px}
+.auth-submit[disabled]{opacity:.55}
+.auth-error{min-height:18px;color:var(--red);font-size:12px;margin-top:12px}
+.auth-note{font-size:10px!important;margin:14px 0 0!important;color:var(--muted)}
+.hidden{display:none!important}
+[aria-live]{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     AUTH SCREEN
+     ============================================================ -->
+<div class="auth-screen" id="authScreen">
+  <form class="auth-card" id="loginForm">
+    <div class="auth-logo">DO</div>
+    <h2>Admin sign-in</h2>
+    <p>Sign in with your Firebase admin account to access device records.</p>
+    <label class="auth-field"><span>EMAIL</span><input id="loginEmail" type="email" autocomplete="username" required placeholder="admin@example.com"></label>
+    <label class="auth-field"><span>PASSWORD</span><input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Your password"></label>
+    <button class="auth-submit" id="loginButton" type="submit">Sign in securely</button>
+    <div class="auth-error" id="loginError" role="alert"></div>
+    <p class="auth-note">Only approved administrators should sign in.</p>
+  </form>
+</div>
+
+<div class="app hidden" id="appRoot">
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">DO</div>
+    <div><h1 id="headerTitle">DeviceOps</h1><p id="headerSub">Secure fleet administration</p></div>
+  </div>
+  <div class="top-actions">
+    <div class="user-chip" id="userChip"><span id="userEmailTop">Administrator</span></div>
+    <button class="icon-btn" id="notifBtn" type="button" aria-label="Notifications">◔<span class="badge" id="notifBadge"></span></button>
+    <button class="icon-btn" id="profileBtn" type="button" aria-label="Account menu">◉</button>
+  </div>
+</header>
+
+<!-- ============================================================
+     DASHBOARD PAGE
+     ============================================================ -->
+<main class="page active" id="page-dashboard">
+  <section class="hero">
+    <div class="hero-card">
+      <div class="hero-row">
+        <div>
+          <span class="eyebrow">MOBILE COMMAND CENTER</span>
+          <h2>Everything important, one tap away.</h2>
+          <p>Track authorized devices, review fleet health and handle daily actions with a smooth mobile-first workflow.</p>
+        </div>
+        <div>
+          <div class="health-ring" id="healthRing"><span id="healthScoreText">0%</span></div>
+          <div class="health-label">Fleet health</div>
+        </div>
+      </div>
+      <div class="live-row">
+        <span class="live-pill" id="livePill"><span class="live-dot"></span> <span id="livePillText">Connecting…</span></span>
+        <span class="sync-time" id="syncTime">Waiting for first sync</span>
+      </div>
+      <div class="hero-summary">
+        <div><span>Total</span><b id="heroTotal">0</b></div>
+        <div><span>Online</span><b id="heroOnline">0</b></div>
+        <div><span>Pending</span><b id="heroPending">0</b></div>
+      </div>
+      <div class="hero-actions">
+        <button class="btn primary" id="syncBtn" type="button">↻ Sync devices</button>
+        <button class="btn" id="addDeviceBtn" type="button" disabled aria-disabled="true" title="Coming soon — add devices directly in the Firestore console for now">＋ Add device</button>
+        <button class="btn" id="logsBtn" type="button">▤ Audit logs</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="status-strip">
+    <div class="status-left"><span class="live-dot" id="statusDot"></span><div><b>Firestore live listener</b><div id="lastSyncText" style="font-size:10px;color:var(--muted);margin-top:2px">Waiting for first sync…</div></div></div>
+    <div class="status-right"><span id="visibleCount">0 visible</span></div>
+  </div>
+  <div class="connection-warning" id="connectionWarning" role="status">Live connection is taking longer than usual. Still retrying automatically…</div>
+
+  <section class="stats" id="statsRow">
+    <div class="stat indigo"><div class="stat-icon">▣</div><b id="totalCount">0</b><span>TOTAL DEVICES</span></div>
+    <div class="stat mint"><div class="stat-icon">●</div><b id="onlineCount">0</b><span>ONLINE</span></div>
+    <div class="stat amber"><div class="stat-icon">⌁</div><b id="offlineCount">0</b><span>OFFLINE</span></div>
+    <div class="stat violet"><div class="stat-icon">◌</div><b id="pendingCount">0</b><span>PENDING</span></div>
+  </section>
+
+  <section class="content-grid">
+    <div class="panel">
+      <div class="panel-head"><h3>Quick actions</h3><span>Most used</span></div>
+      <div class="quick-grid">
+        <button class="quick" type="button" id="quickSync"><div class="quick-icon">↻</div><strong>Sync all</strong><span>Refresh statuses</span></button>
+        <button class="quick" type="button" id="quickLogs"><div class="quick-icon">▤</div><strong>Audit logs</strong><span>View recent activity</span></button>
+        <button class="quick" type="button" disabled aria-disabled="true" title="Coming soon — open a device and tap Folder to assign a group"><div class="quick-icon">▣</div><strong>Groups</strong><span>Manage folders</span></button>
+        <button class="quick" type="button" disabled aria-disabled="true" title="Coming soon — open a device and tap Note"><div class="quick-icon">□</div><strong>Notes</strong><span>Open device notes</span></button>
+      </div>
+    </div>
+  </section>
+
+  <section class="action-dock" aria-label="Quick actions">
+    <button type="button" id="dockSync" aria-label="Sync devices"><strong>↻</strong><span>Sync</span></button>
+    <button type="button" id="dockPing" aria-label="Ping all visible devices"><strong>⌁</strong><span>Ping all</span></button>
+    <button type="button" id="dockExport" aria-label="Export CSV"><strong>⇩</strong><span>Export</span></button>
+    <button type="button" id="dockSettings" aria-label="Open settings"><strong>⚙</strong><span>Settings</span></button>
+  </section>
+
+  <section class="toolbar">
+    <label class="search">⌕ <input id="searchInput" placeholder="Search devices, groups or models" aria-label="Search devices"></label>
+    <button class="btn primary" id="pingAllBtn" type="button">Ping all</button>
+    <button class="btn" id="filterBtn" type="button" aria-haspopup="true" aria-label="Filter devices">☷</button>
+    <div class="filter-menu" id="filterMenu" role="menu">
+      <button class="filter-option active" type="button" data-filter="ALL" role="menuitemradio" aria-checked="true">All devices</button>
+      <button class="filter-option" type="button" data-filter="ONLINE" role="menuitemradio" aria-checked="false">Online only</button>
+      <button class="filter-option" type="button" data-filter="OFFLINE" role="menuitemradio" aria-checked="false">Offline only</button>
+      <button class="filter-option" type="button" data-filter="PENDING" role="menuitemradio" aria-checked="false">Pending only</button>
+      <button class="filter-option" type="button" id="clearFilterBtn">Clear filters</button>
+    </div>
+  </section>
+
+  <div class="smart-chips" id="smartChips">
+    <button class="smart-chip active" type="button" data-filter="ALL">All <b id="chipAll">0</b></button>
+    <button class="smart-chip" type="button" data-filter="ONLINE"><i class="dot mint"></i>Online <b id="chipOnline">0</b></button>
+    <button class="smart-chip" type="button" data-filter="OFFLINE"><i class="dot amber"></i>Offline <b id="chipOffline">0</b></button>
+    <button class="smart-chip" type="button" data-filter="PENDING"><i class="dot violet"></i>Pending <b id="chipPending">0</b></button>
+  </div>
+
+  <div class="section-head">
+    <h3>Managed devices</h3>
+    <div><button class="view-btn active" id="gridViewBtn" type="button" aria-label="Grid view" title="Grid view">▦</button><button class="view-btn" id="listViewBtn" type="button" aria-label="List view" title="List view">☰</button></div>
+  </div>
+  <section class="device-list" id="deviceList" aria-live="polite"></section>
+</main>
+
+<!-- ============================================================
+     INBOX PAGE
+     ============================================================ -->
+<main class="page" id="page-inbox">
+  <section class="settings">
+    <h2 class="settings-title">Work Inbox</h2>
+    <p class="settings-sub">Alerts generated from live device state.</p>
+    <div id="inboxList"></div>
+  </section>
+</main>
+
+<!-- ============================================================
+     TOOLS PAGE
+     ============================================================ -->
+<main class="page" id="page-tools">
+  <section class="settings">
+    <h2 class="settings-title">Tools</h2>
+    <p class="settings-sub">Administrative utilities for your managed fleet.</p>
+    <article class="setting-card open">
+      <button class="setting-head" type="button"><div class="setting-icon indigo">✦</div><div><div class="setting-name">Device tools</div><div class="setting-desc">Common fleet actions</div></div><div class="chev">⌄</div></button>
+      <div class="setting-body">
+        <div class="divider"></div>
+        <div class="row">
+          <button class="small-btn primary" id="toolSyncBtn" type="button">Sync devices</button>
+          <button class="small-btn" id="toolExportBtn" type="button">Export CSV</button>
+          <button class="small-btn" id="toolLogsBtn" type="button">Audit logs</button>
+          <button class="small-btn" type="button" disabled aria-disabled="true" title="Coming soon — manage groups from each device's Folder action for now">Create group</button>
+        </div>
+      </div>
+    </article>
+  </section>
+</main>
+
+<!-- ============================================================
+     SETTINGS PAGE
+     ============================================================ -->
+<main class="page" id="page-settings">
+  <section class="settings">
+    <h2 class="settings-title">Settings</h2>
+    <p class="settings-sub">Preferences and account details.</p>
+
+    <article class="setting-card open">
+      <button class="setting-head" type="button"><div class="setting-icon indigo">♢</div><div><div class="setting-name">Profile</div><div class="setting-desc">Admin account details</div></div><div class="chev">⌄</div></button>
+      <div class="setting-body">
+        <div class="divider"></div>
+        <div class="field"><label>Display name (saved on this device only)</label><input id="profileNameInput" placeholder="Panel Admin"></div>
+        <div class="field"><label>Email</label><input id="profileEmailInput" value="" readonly></div>
+        <button class="small-btn primary" id="saveProfileBtn" type="button">Save profile</button>
+      </div>
+    </article>
+
+    <article class="setting-card">
+      <button class="setting-head" type="button"><div class="setting-icon mint">◐</div><div><div class="setting-name">Preferences</div><div class="setting-desc">Display and motion</div></div><div class="chev">⌄</div></button>
+      <div class="setting-body">
+        <div class="divider"></div>
+        <div class="option"><div><b>Reduced motion</b><span>Turn off non-essential animation</span></div><button class="switch" id="reducedMotionSwitch" type="button" role="switch" aria-checked="false"></button></div>
+      </div>
+    </article>
+
+    <article class="setting-card">
+      <button class="setting-head" type="button"><div class="setting-icon violet">▤</div><div><div class="setting-name">Firebase project</div><div class="setting-desc">Connection and diagnostics</div></div><div class="chev">⌄</div></button>
+      <div class="setting-body">
+        <div class="divider"></div>
+        <div class="option"><div><b>Primary project</b><span id="projectIdText">—</span></div><span style="color:var(--mint);font-size:11px">Active</span></div>
+        <div class="row" style="margin-top:11px"><button class="small-btn primary" id="testConnectionBtn" type="button">Test connection</button></div>
+      </div>
+    </article>
+
+    <article class="setting-card">
+      <button class="setting-head" type="button"><div class="setting-icon amber">♢</div><div><div class="setting-name">Security</div><div class="setting-desc">Login protection</div></div><div class="chev">⌄</div></button>
+      <div class="setting-body">
+        <div class="divider"></div>
+        <div class="option"><div><b>Two-factor authentication</b><span>Protect administrator access</span></div><span class="soon-pill">Coming soon</span></div>
+        <div class="option"><div><b>Login alerts</b><span>Notify on new sessions</span></div><span class="soon-pill">Coming soon</span></div>
+        <div class="row" style="margin-top:11px">
+          <button class="small-btn" type="button" disabled aria-disabled="true" title="Coming soon">Change password</button>
+          <button class="small-btn danger" type="button" disabled aria-disabled="true" title="Coming soon">Sign out all sessions</button>
+        </div>
+      </div>
+    </article>
+
+    <article class="setting-card">
+      <button class="setting-head" type="button"><div class="setting-icon indigo">▣</div><div><div class="setting-name">Active session</div><div class="setting-desc">This device only</div></div><div class="chev">⌄</div></button>
+      <div class="setting-body">
+        <div class="divider"></div>
+        <div class="option"><div><b>This device</b><span id="sessionEmailText">Current session</span></div><span style="color:var(--mint);font-size:11px">Now</span></div>
+        <p style="font-size:10px;color:var(--muted);margin:8px 0 0">Multi-session management isn't available yet.</p>
+      </div>
+    </article>
+
+    <article class="setting-card">
+      <button class="setting-head" type="button"><div class="setting-icon mint">◔</div><div><div class="setting-name">Notifications</div><div class="setting-desc">Fleet alerts</div></div><div class="chev">⌄</div></button>
+      <div class="setting-body">
+        <div class="divider"></div>
+        <div class="option"><div><b>Offline alerts</b><span>Notify when devices stop reporting</span></div><button class="switch on" id="offlineAlertsSwitch" type="button" role="switch" aria-checked="true"></button></div>
+        <div class="option"><div><b>Security alerts</b><span>Important account events</span></div><span class="soon-pill">Coming soon</span></div>
+      </div>
+    </article>
+  </section>
+</main>
+</div>
+
+<!-- ============================================================
+     FLOATING ACTION BUTTON
+     ============================================================ -->
+<button class="fab" id="fab" type="button" aria-haspopup="true" aria-label="Quick actions">＋</button>
+<div class="fab-menu" id="fabMenu" role="menu">
+  <button type="button" id="fabPingAll" role="menuitem">⌁ Ping all visible</button>
+  <button type="button" id="fabExport" role="menuitem">⇩ Export CSV</button>
+</div>
+
+<!-- ============================================================
+     BOTTOM NAVIGATION
+     ============================================================ -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="nav-btn active" type="button" data-page="dashboard" aria-label="Devices"><strong>▣</strong>Devices</button>
+  <button class="nav-btn" type="button" data-page="inbox" aria-label="Inbox"><strong>▤</strong>Inbox</button>
+  <button class="nav-btn" type="button" data-page="tools" aria-label="Tools"><strong>✦</strong>Tools</button>
+  <button class="nav-btn" type="button" data-page="settings" aria-label="Settings"><strong>⚙</strong>Settings</button>
+</nav>
+
+<div class="overlay" id="overlay"></div>
+
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true">
+  <div class="drawer-head"><h3 id="drawerTitle">Device details</h3><button class="close" id="closeDrawerBtn" type="button" aria-label="Close details">✕</button></div>
+  <div id="drawerContent"></div>
+</aside>
+
+<aside class="notif" id="notif" role="dialog" aria-modal="true" aria-labelledby="notifTitle" aria-hidden="true">
+  <div class="notif-head"><h3 id="notifTitle">Notifications</h3><button class="close" id="closeNotifBtn" type="button" aria-label="Close notifications">✕</button></div>
+  <div id="notifList"></div>
+</aside>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- ============================================================
+     CENTRALIZED BOTTOM SHEET
+     One active sheet at a time. Cancel/Confirm listeners are
+     registered ONCE in the modal-manager section of the script
+     and are never touched by any other code.
+     ============================================================ -->
+<div class="sheet-modal" id="sheetModal" aria-hidden="true">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <h3 id="sheetTitle">Update</h3>
+    <p id="sheetText"></p>
+    <div id="sheetField"></div>
+    <div class="sheet-actions">
+      <button class="small-btn" id="sheetCancelBtn" type="button">Cancel</button>
+      <button class="small-btn primary" id="sheetConfirmBtn" type="button">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Global fallback error banner — runs outside the module in case the
+// module fails to parse/execute, so the user still sees something useful.
+window.addEventListener("error", event => {
+  const list = document.getElementById("deviceList");
+  if (!list) return;
+  if (list.dataset.rendered) return; // don't stomp a working render with a stale error
+});
+</script>
+
+<script type="module">
+/* ============================================================
+   CONFIGURATION
+   ============================================================ */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import {
+  getFirestore, collection, doc, onSnapshot, updateDoc, writeBatch,
+  serverTimestamp, addDoc, getDocs, query, orderBy, limit
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+import {
+  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCDeZNmNBjgh2gcGdYzqkpGsW9it7vvO14",
+  authDomain: "device-panel-aace1.firebaseapp.com",
+  projectId: "device-panel-aace1",
+  storageBucket: "device-panel-aace1.firebasestorage.app",
+  messagingSenderId: "558334945656",
+  appId: "1:558334945656:web:7344e039f91767136e008d"
+};
+
+const HEARTBEAT_TIMEOUT_MS = 2 * 60 * 1000;       // device considered online if seen within this window
+const INACTIVE_WARNING_MS = 24 * 60 * 60 * 1000;  // "no heartbeat" warning threshold
+const CONNECTION_WARNING_DELAY_MS = 8000;
+const BATCH_CHUNK_SIZE = 400;                     // stay safely under Firestore's 500-write batch limit
+const NOTE_MAX_LENGTH = 500;
+const GROUP_MAX_LENGTH = 60;
+const TOAST_SUCCESS_MS = 2200;
+const TOAST_ERROR_MS = 4200;
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+/* ============================================================
+   DOM REFERENCES
+   ============================================================ */
+const $ = id => document.getElementById(id);
+
+const authScreen = $("authScreen"), appRoot = $("appRoot");
+const loginForm = $("loginForm"), loginEmail = $("loginEmail"), loginPassword = $("loginPassword"),
+      loginButton = $("loginButton"), loginError = $("loginError");
+
+const deviceList = $("deviceList"), toast = $("toast"), overlay = $("overlay"),
+      drawer = $("drawer"), drawerContent = $("drawerContent"), notif = $("notif"), notifList = $("notifList"),
+      inboxList = $("inboxList");
+
+const searchInput = $("searchInput"), pingAllBtn = $("pingAllBtn"), filterBtn = $("filterBtn"),
+      filterMenu = $("filterMenu"), visibleCount = $("visibleCount"), lastSyncText = $("lastSyncText"),
+      syncBtn = $("syncBtn"), addDeviceBtn = $("addDeviceBtn"), logsBtn = $("logsBtn"),
+      profileBtn = $("profileBtn"), notifBtn = $("notifBtn"), notifBadge = $("notifBadge"),
+      fab = $("fab"), fabMenu = $("fabMenu"), connectionWarning = $("connectionWarning"),
+      livePill = $("livePill"), livePillText = $("livePillText"), statusDot = $("statusDot"),
+      syncTime = $("syncTime"), healthRing = $("healthRing"), healthScoreText = $("healthScoreText"),
+      userChip = $("userChip"), userEmailTop = $("userEmailTop");
+
+const sheetModal = $("sheetModal"), sheetTitle = $("sheetTitle"), sheetText = $("sheetText"),
+      sheetField = $("sheetField"), sheetCancelBtn = $("sheetCancelBtn"), sheetConfirmBtn = $("sheetConfirmBtn");
+
+/* ============================================================
+   APP STATE
+   ============================================================ */
+let devices = [];
+let currentSearch = "";
+let currentFilter = "ALL";
+let lastSyncAt = null;
+let unsubscribeDevices = null;
+let connectionTimerId = null;
+let scrollLockCount = 0;
+let savedScrollY = 0;
+let sheetResolver = null;
+let sheetMode = "input";
+let sheetLastFocused = null;
+let currentUser = null;
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+function escapeHtml(value = "") {
+  return String(value).replace(/[&<>'"]/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
+  })[char]);
+}
+
+function toDate(value) {
+  if (!value) return null;
+  if (typeof value.toDate === "function") return value.toDate();
+  if (value instanceof Date) return value;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatLastSeen(date) {
+  if (!date) return null;
+  const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+  if (seconds < 60) return "Just now";
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} hr ago`;
+  return `${Math.floor(seconds / 86400)} day(s) ago`;
+}
+
+function showToast(text, kind = "success") {
+  toast.textContent = text;
+  toast.className = "toast show " + (kind === "error" ? "error" : "success");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => toast.classList.remove("show"), kind === "error" ? TOAST_ERROR_MS : TOAST_SUCCESS_MS);
+}
+
+function setBusy(button, busy) {
+  if (!button) return;
+  button.disabled = busy;
+  button.classList.toggle("action-loading", busy);
+}
+
+function lockBodyScroll() {
+  if (scrollLockCount === 0) {
+    savedScrollY = window.scrollY;
+    document.body.style.top = `-${savedScrollY}px`;
+    document.body.classList.add("scroll-locked");
+  }
+  scrollLockCount++;
+}
+
+function unlockBodyScroll() {
+  scrollLockCount = Math.max(0, scrollLockCount - 1);
+  if (scrollLockCount === 0) {
+    document.body.classList.remove("scroll-locked");
+    document.body.style.top = "";
+    window.scrollTo(0, savedScrollY);
+  }
+}
+
+/* ============================================================
+   CENTRALIZED BOTTOM-SHEET MANAGER
+   openSheet() / closeSheet() are the ONLY functions allowed to
+   touch the sheet's Cancel/Confirm buttons. Their listeners are
+   registered exactly once, below, and nothing else in this file
+   may re-bind onclick/addEventListener on these two elements —
+   that generic re-binding was the root cause of the Note/Group
+   Cancel & Save bug in the previous version of this file.
+   ============================================================ */
+function openSheet({ title, text = "", value = "", type = "text", confirmText = "Save", cancelText = "Cancel", mode = "input", danger = false, maxLength }) {
+  sheetMode = mode;
+  sheetLastFocused = document.activeElement;
+  sheetTitle.textContent = title;
+  sheetText.textContent = text;
+  sheetCancelBtn.textContent = cancelText;
+  sheetCancelBtn.style.display = cancelText ? "" : "none";
+  sheetConfirmBtn.style.gridColumn = cancelText ? "" : "1 / -1";
+  sheetConfirmBtn.textContent = confirmText;
+  sheetConfirmBtn.classList.toggle("danger", !!danger);
+  sheetConfirmBtn.classList.toggle("primary", !danger);
+
+  if (mode === "input") {
+    sheetField.style.display = "";
+    sheetField.innerHTML = type === "textarea"
+      ? `<textarea id="sheetInput" maxlength="${maxLength || 500}" placeholder="Type here…"></textarea>`
+      : `<input id="sheetInput" type="text" maxlength="${maxLength || 80}" placeholder="Type here…">`;
+    $("sheetInput").value = value;
+  } else {
+    sheetField.style.display = "none";
+    sheetField.innerHTML = "";
+  }
+
+  sheetModal.classList.add("open");
+  sheetModal.setAttribute("aria-hidden", "false");
+  lockBodyScroll();
+  setTimeout(() => {
+    const input = $("sheetInput");
+    (input || sheetConfirmBtn).focus();
+  }, 60);
+
+  return new Promise(resolve => { sheetResolver = resolve; });
+}
+
+function closeSheet(result = null) {
+  if (!sheetModal.classList.contains("open")) return;
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); // dismiss iOS keyboard
+  sheetModal.classList.remove("open");
+  sheetModal.setAttribute("aria-hidden", "true");
+  unlockBodyScroll();
+  const resolve = sheetResolver;
+  sheetResolver = null;
+  if (sheetLastFocused && typeof sheetLastFocused.focus === "function") {
+    setTimeout(() => sheetLastFocused.focus(), 0);
+  }
+  if (resolve) resolve(result);
+}
+
+// Registered exactly once. This is the fix for the reported bug.
+sheetCancelBtn.addEventListener("click", () => closeSheet(sheetMode === "input" ? null : false));
+sheetConfirmBtn.addEventListener("click", () => {
+  if (sheetMode === "input") {
+    closeSheet($("sheetInput")?.value ?? "");
+  } else {
+    closeSheet(true);
+  }
+});
+sheetModal.addEventListener("click", event => {
+  if (event.target === sheetModal) closeSheet(sheetMode === "input" ? null : false);
+});
+
+/* ============================================================
+   PANEL (drawer / notification) HELPERS
+   ============================================================ */
+function openDrawerPanel() {
+  drawer.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
+  overlay.classList.add("show");
+  lockBodyScroll();
+}
+function openNotifPanel() {
+  notif.classList.add("open");
+  notif.setAttribute("aria-hidden", "false");
+  overlay.classList.add("show");
+  lockBodyScroll();
+}
+function closePanels() {
+  const wasOpen = drawer.classList.contains("open") || notif.classList.contains("open");
+  drawer.classList.remove("open");
+  drawer.setAttribute("aria-hidden", "true");
+  notif.classList.remove("open");
+  notif.setAttribute("aria-hidden", "true");
+  overlay.classList.remove("show");
+  if (wasOpen) unlockBodyScroll();
+}
+
+document.addEventListener("keydown", event => {
+  if (event.key !== "Escape") return;
+  if (sheetModal.classList.contains("open")) { closeSheet(sheetMode === "input" ? null : false); return; }
+  if (drawer.classList.contains("open") || notif.classList.contains("open")) { closePanels(); return; }
+  if (filterMenu.classList.contains("open")) filterMenu.classList.remove("open");
+  if (fabMenu.classList.contains("open")) fabMenu.classList.remove("open");
+});
+
+/* ============================================================
+   FIREBASE / AUTH
+   ============================================================ */
+loginForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  loginError.textContent = "";
+  loginButton.disabled = true;
+  loginButton.textContent = "Signing in…";
+  try {
+    await signInWithEmailAndPassword(auth, loginEmail.value.trim(), loginPassword.value);
+    loginPassword.value = "";
+  } catch (error) {
+    console.error("Login error:", error);
+    loginError.textContent = "Email or password is incorrect, or this account is not enabled.";
+  } finally {
+    loginButton.disabled = false;
+    loginButton.textContent = "Sign in securely";
+  }
+});
+
+onAuthStateChanged(auth, user => {
+  currentUser = user;
+  if (user) {
+    authScreen.classList.add("hidden");
+    appRoot.classList.remove("hidden");
+    userEmailTop.textContent = user.email || "Administrator";
+    $("profileEmailInput").value = user.email || "";
+    $("sessionEmailText").textContent = user.email || "Current session";
+    const savedName = localStorage.getItem("deviceops.profileName");
+    if (savedName) $("profileNameInput").value = savedName;
+    startDeviceListener();
+  } else {
+    appRoot.classList.add("hidden");
+    authScreen.classList.remove("hidden");
+    if (unsubscribeDevices) { unsubscribeDevices(); unsubscribeDevices = null; }
+    if (connectionTimerId) { clearTimeout(connectionTimerId); connectionTimerId = null; }
+    devices = [];
+    updateStats();
+    loginEmail.focus();
+  }
+});
+
+function renderSkeleton() {
+  deviceList.innerHTML = Array.from({ length: 4 }).map(() => `
+    <div class="skeleton-wrap">
+      <div class="skeleton-card">
+        <div class="skeleton-bar" style="width:60%"></div>
+        <div class="skeleton-bar" style="width:40%"></div>
+        <div class="skeleton-bar" style="width:80%;margin-top:20px"></div>
+        <div class="skeleton-bar" style="width:50%"></div>
+      </div>
+    </div>`).join("");
+}
+
+function startDeviceListener() {
+  if (unsubscribeDevices) unsubscribeDevices();
+  if (connectionTimerId) clearTimeout(connectionTimerId);
+  connectionWarning.classList.remove("show");
+  livePillText.textContent = "Connecting…";
+  renderSkeleton();
+
+  connectionTimerId = setTimeout(() => connectionWarning.classList.add("show"), CONNECTION_WARNING_DELAY_MS);
+
+  unsubscribeDevices = onSnapshot(
+    collection(db, "devices"),
+    snapshot => {
+      clearTimeout(connectionTimerId);
+      connectionWarning.classList.remove("show");
+      devices = snapshot.docs.map(d => normalizeDevice(d.id, d.data()));
+      lastSyncAt = new Date();
+      const label = lastSyncAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      lastSyncText.textContent = `Last synced ${label}`;
+      syncTime.textContent = `Synced ${label}`;
+      livePillText.textContent = "FIRESTORE LIVE";
+      livePill.classList.remove("offline");
+      statusDot.style.background = "";
+      refreshView();
+    },
+    error => {
+      clearTimeout(connectionTimerId);
+      connectionWarning.classList.add("show");
+      console.error("Firestore listener error:", error);
+      livePillText.textContent = "Connection blocked";
+      livePill.classList.add("offline");
+      devices = [];
+      updateStats();
+      deviceList.innerHTML = `
+        <div class="empty-state error" style="grid-column:1/-1">
+          <strong>Firebase connection blocked</strong>
+          <span>${escapeHtml(error.message)}</span>
+        </div>`;
+      showToast("Firebase connection error", "error");
+    }
+  );
+}
+
+/* ============================================================
+   DEVICE NORMALIZATION
+   ============================================================ */
+function normalizeDevice(id, data) {
+  const lastSeenValue = data.lastSeen || data.lastActiveAt || data.updatedAt || null;
+  const lastSeenDate = toDate(lastSeenValue);
+  const ageMs = lastSeenDate ? Date.now() - lastSeenDate.getTime() : null;
+  const heartbeatOnline = ageMs !== null && ageMs <= HEARTBEAT_TIMEOUT_MS;
+  const inactiveLong = ageMs !== null && ageMs >= INACTIVE_WARNING_MS;
+  const rawStatus = String(data.status || "").toUpperCase();
+
+  // Prefer a recent heartbeat timestamp; only fall back to the raw status
+  // text when we have no timestamp at all, so a device can't stay "stuck
+  // online" forever just because a status field says so.
+  const status = heartbeatOnline || (ageMs === null && rawStatus === "ONLINE") ? "ONLINE" : "OFFLINE";
+
+  const last = lastSeenDate ? formatLastSeen(lastSeenDate) : (data.last || data.lastActive || "Not reported");
+
+  return {
+    id,
+    name: data.name || data.deviceName || "Unnamed device",
+    model: data.model || "Unknown",
+    version: data.version || data.appVersion || "—",
+    group: data.group || "UNASSIGNED",
+    status,
+    battery: Math.max(0, Math.min(100, Number(data.battery ?? 0))),
+    last,
+    lastSeenDate,
+    pending: Boolean(data.pending || data.command?.status === "PENDING"),
+    note: data.note || "",
+    command: data.command || null,
+    possibleUninstalled: Boolean(data.uninstalled) || inactiveLong
+  };
+}
+
+setInterval(() => {
+  if (!devices.length) return;
+  devices = devices.map(d => ({ ...d, last: d.lastSeenDate ? formatLastSeen(d.lastSeenDate) : d.last }));
+  render(filteredDevices());
+}, 30000);
+
+/* ============================================================
+   RENDERING
+   ============================================================ */
+function batteryClass(pct) {
+  if (pct >= 50) return "high";
+  if (pct >= 20) return "mid";
+  return "low";
+}
+
+function updateStats() {
+  const total = devices.length;
+  const online = devices.filter(d => d.status === "ONLINE").length;
+  const offline = total - online;
+  const pending = devices.filter(d => d.pending).length;
+
+  $("totalCount").textContent = total;
+  $("onlineCount").textContent = online;
+  $("offlineCount").textContent = offline;
+  $("pendingCount").textContent = pending;
+  $("heroTotal").textContent = total;
+  $("heroOnline").textContent = online;
+  $("heroPending").textContent = pending;
+  $("chipAll").textContent = total;
+  $("chipOnline").textContent = online;
+  $("chipOffline").textContent = offline;
+  $("chipPending").textContent = pending;
+
+  const score = total ? Math.round((online / total) * 100) : 0;
+  healthScoreText.textContent = `${score}%`;
+  healthRing.style.background = `conic-gradient(var(--mint) 0 ${score}%, #212c40 ${score}%)`;
+
+  renderNotifications();
+}
+
+function render(items) {
+  deviceList.innerHTML = "";
+  deviceList.dataset.rendered = "1";
+
+  if (!items.length) {
+    deviceList.innerHTML = devices.length
+      ? `<div class="empty-state"><strong>No devices match your filters</strong><span>Try clearing search or filters.</span></div>`
+      : `<div class="empty-state"><strong>No devices found</strong><span>Add documents inside the <b>devices</b> collection in Firestore.</span></div>`;
+    return;
+  }
+
+  items.forEach(d => {
+    const el = document.createElement("article");
+    el.className = "device" + (d.status === "OFFLINE" ? " offline" : "");
+    el.innerHTML = `
+      <div class="device-top">
+        <div class="device-avatar">▣</div>
+        <div>
+          <h4>${escapeHtml(d.name)}</h4>
+          <div class="device-meta">
+            <span class="chip">${escapeHtml(d.model)}</span>
+            <span class="chip">${escapeHtml(d.version)}</span>
+            <span class="chip">${escapeHtml(d.group)}</span>
+            <span class="chip ${d.status === "ONLINE" ? "status-online" : "status-offline"}">${escapeHtml(d.status)}</span>
+            ${d.possibleUninstalled ? '<span class="chip alert">NO HEARTBEAT 24H+</span>' : ""}
+          </div>
+        </div>
+        <div class="battery ${batteryClass(d.battery)}">${d.battery}%<small>Battery</small></div>
+      </div>
+      <div class="device-data">
+        <div class="data"><span>LAST ACTIVE</span><b>${escapeHtml(d.last)}</b></div>
+        <div class="data"><span>HEALTH</span><b>${d.status === "ONLINE" ? "Good" : "Review"}</b></div>
+        <div class="data"><span>COMMAND</span><b>${d.pending ? "Queued" : "Idle"}</b></div>
+      </div>
+      ${d.note ? `<div class="note-preview"><b>Note:</b> ${escapeHtml(d.note)}</div>` : ""}
+      <div class="device-actions">
+        <button type="button" class="${d.pending ? "act-pending" : ""}" data-act="ping"><strong>⌁</strong>${d.pending ? "Queued" : "Ping"}</button>
+        <button type="button" data-act="note"><strong>□</strong>Note</button>
+        <button type="button" data-act="group"><strong>▣</strong>Folder</button>
+        <button type="button" data-act="details"><strong>•••</strong>Details</button>
+      </div>`;
+
+    el.querySelector('[data-act="ping"]').addEventListener("click", async event => {
+      event.stopPropagation();
+      await queuePing(d, event.currentTarget);
+    });
+    el.querySelector('[data-act="note"]').addEventListener("click", async event => {
+      event.stopPropagation();
+      await editNote(d);
+    });
+    el.querySelector('[data-act="group"]').addEventListener("click", async event => {
+      event.stopPropagation();
+      await changeGroup(d);
+    });
+    el.querySelector('[data-act="details"]').addEventListener("click", event => {
+      event.stopPropagation();
+      openDetails(d);
+    });
+    el.addEventListener("click", () => openDetails(d));
+    deviceList.appendChild(el);
+  });
+}
+
+/* ============================================================
+   FILTERS
+   ============================================================ */
+function filteredDevices() {
+  const query = currentSearch.trim().toLowerCase();
+  return devices.filter(device => {
+    const matchesSearch = !query || [device.name, device.model, device.group, device.version, device.status]
+      .some(value => String(value || "").toLowerCase().includes(query));
+    const matchesFilter = currentFilter === "ALL" || (currentFilter === "PENDING" ? device.pending : device.status === currentFilter);
+    return matchesSearch && matchesFilter;
+  });
+}
+
+function refreshView() {
+  const visible = filteredDevices();
+  render(visible);
+  visibleCount.textContent = `${visible.length} visible`;
+  updateStats();
+}
+
+// Single source of truth for filter state — both the filter-menu dropdown
+// and the smart chips call this, so they can never fall out of sync.
+function setFilter(value) {
+  currentFilter = value;
+  document.querySelectorAll("[data-filter]").forEach(btn => {
+    const active = btn.dataset.filter === value;
+    btn.classList.toggle("active", active);
+    if (btn.hasAttribute("aria-checked")) btn.setAttribute("aria-checked", String(active));
+  });
+  filterMenu.classList.remove("open");
+  refreshView();
+}
+
+/* ============================================================
+   ACTIONS
+   ============================================================ */
+async function logAudit(action, device, details = "") {
+  try {
+    await addDoc(collection(db, "auditLogs"), {
+      action,
+      deviceId: device?.id || null,
+      deviceName: device?.name || null,
+      adminUid: currentUser?.uid || null,
+      adminEmail: currentUser?.email || null,
+      createdAt: serverTimestamp(),
+      details
+    });
+  } catch (error) {
+    console.error("Audit log write failed:", error); // non-fatal, never blocks the primary action
+  }
+}
+
+async function queuePing(device, button = null) {
+  setBusy(button, true);
+  try {
+    await updateDoc(doc(db, "devices", device.id), {
+      command: { type: "PING", status: "PENDING", requestedBy: currentUser?.uid || "admin", requestedAt: serverTimestamp() },
+      pending: true
+    });
+    showToast(`Ping queued for ${device.name}`);
+    logAudit("PING", device);
+  } catch (error) {
+    console.error("Ping error:", error);
+    showToast(`Ping failed: ${error.message}`, "error");
+  } finally {
+    setBusy(button, false);
+  }
+}
+
+async function editNote(device) {
+  const value = await openSheet({
+    title: `Note · ${device.name}`,
+    text: "Save a private operational note for this device.",
+    value: device.note || "",
+    type: "textarea",
+    confirmText: "Save note",
+    maxLength: NOTE_MAX_LENGTH
+  });
+  if (value === null) return; // cancelled
+  try {
+    await updateDoc(doc(db, "devices", device.id), {
+      note: value.trim().slice(0, NOTE_MAX_LENGTH),
+      noteUpdatedAt: serverTimestamp(),
+      noteUpdatedBy: currentUser?.uid || "admin"
+    });
+    showToast("Note saved");
+    logAudit("NOTE_UPDATE", device);
+  } catch (error) {
+    console.error("Note error:", error);
+    showToast(`Note failed: ${error.message}`, "error");
+  }
+}
+
+async function changeGroup(device) {
+  const value = await openSheet({
+    title: `Move ${device.name}`,
+    text: "Enter the device group name.",
+    value: device.group || "UNASSIGNED",
+    type: "text",
+    confirmText: "Update group",
+    maxLength: GROUP_MAX_LENGTH
+  });
+  if (value === null) return; // cancelled
+  const trimmed = value.trim();
+  if (!trimmed) { showToast("Group name can't be empty", "error"); return; }
+  try {
+    await updateDoc(doc(db, "devices", device.id), { group: trimmed, groupUpdatedAt: serverTimestamp() });
+    showToast("Group updated");
+    logAudit("GROUP_UPDATE", device, trimmed);
+  } catch (error) {
+    console.error("Group error:", error);
+    showToast(`Group failed: ${error.message}`, "error");
+  }
+}
+
+async function pingAllDevices() {
+  const targets = filteredDevices();
+  if (!targets.length) { showToast("No visible devices to ping", "error"); return; }
+
+  const confirmed = await openSheet({
+    title: "Ping visible devices?",
+    text: `This will queue a ping for the ${targets.length} device(s) currently visible under your active search and filter.`,
+    mode: "confirm",
+    confirmText: `Queue ping for ${targets.length}`,
+    cancelText: "Cancel"
+  });
+  if (!confirmed) return;
+
+  setBusy(pingAllBtn, true);
+  try {
+    let okCount = 0, failCount = 0;
+    for (let i = 0; i < targets.length; i += BATCH_CHUNK_SIZE) {
+      const chunk = targets.slice(i, i + BATCH_CHUNK_SIZE);
+      const batch = writeBatch(db);
+      chunk.forEach(device => {
+        batch.update(doc(db, "devices", device.id), {
+          command: { type: "PING", status: "PENDING", requestedBy: currentUser?.uid || "admin", requestedAt: serverTimestamp() },
+          pending: true
+        });
+      });
+      try {
+        await batch.commit();
+        okCount += chunk.length;
+      } catch (error) {
+        console.error("Ping-all batch error:", error);
+        failCount += chunk.length;
+      }
+    }
+    if (failCount === 0) showToast(`Ping queued for ${okCount} device(s)`);
+    else showToast(`Queued ${okCount}, failed ${failCount}`, failCount === targets.length ? "error" : "success");
+    logAudit("PING_ALL", null, `${okCount} queued, ${failCount} failed`);
+  } finally {
+    setBusy(pingAllBtn, false);
+  }
+}
+
+function exportDevicesCsv() {
+  const rows = [
+    ["Name", "Model", "Version", "Group", "Status", "Battery", "Last seen", "Pending", "Note"],
+    ...filteredDevices().map(d => [d.name, d.model, d.version, d.group, d.status, `${d.battery}%`, d.last, d.pending ? "Yes" : "No", d.note])
+  ];
+  const csv = rows.map(row => row.map(v => `"${String(v ?? "").replaceAll('"', '""')}"`).join(",")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `deviceops-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+  showToast("CSV exported");
+}
+
+async function testFirestoreConnection() {
+  setBusy($("testConnectionBtn"), true);
+  try {
+    await getDocs(query(collection(db, "devices"), limit(1)));
+    showToast("Connection healthy — read succeeded");
+  } catch (error) {
+    console.error("Connection test failed:", error);
+    showToast(`Connection test failed: ${error.message}`, "error");
+  } finally {
+    setBusy($("testConnectionBtn"), false);
+  }
+}
+
+async function openAuditLog() {
+  try {
+    const snapshot = await getDocs(query(collection(db, "auditLogs"), orderBy("createdAt", "desc"), limit(20)));
+    if (snapshot.empty) {
+      await openSheet({ title: "Audit logs", text: "No audit log entries yet. Actions like Ping, Note, and Group updates will appear here.", mode: "confirm", confirmText: "Close", cancelText: "" });
+      return;
+    }
+    const lines = snapshot.docs.map(docSnap => {
+      const e = docSnap.data();
+      const when = e.createdAt?.toDate ? e.createdAt.toDate().toLocaleString() : "Just now";
+      return `${when} — ${e.action}${e.deviceName ? " · " + e.deviceName : ""}${e.details ? " (" + e.details + ")" : ""}`;
+    }).join("\n");
+    await openSheet({ title: "Recent audit log entries", text: lines, mode: "confirm", confirmText: "Close", cancelText: "" });
+  } catch (error) {
+    console.error("Audit log read failed:", error);
+    showToast(`Couldn't load audit logs: ${error.message}`, "error");
+  }
+}
+
+/* ============================================================
+   NOTIFICATIONS (generated from real device state)
+   ============================================================ */
+function buildNotificationItems() {
+  const items = [];
+  const offlineAlertsOn = localStorage.getItem("deviceops.offlineAlerts") !== "off";
+
+  devices.forEach(d => {
+    if (d.pending) items.push({ kind: "pending", title: "Ping queued", detail: `Waiting for ${d.name}`, icon: "◌" });
+  });
+  if (offlineAlertsOn) {
+    devices.forEach(d => {
+      if (d.possibleUninstalled) items.push({ kind: "alert", title: `${d.name} has no heartbeat`, detail: "No check-in for 24h+ — possible inactive/uninstalled (inference only)", icon: "⌁" });
+    });
+  }
+  return items.slice(0, 12);
+}
+
+function renderNotifications() {
+  const items = buildNotificationItems();
+  notifBadge.classList.toggle("show", items.length > 0);
+
+  const html = items.length
+    ? items.map(n => `
+        <div class="notif-item">
+          <span class="n-icon" style="background:${n.kind === "alert" ? "var(--amber-soft)" : "var(--violet-soft)"};color:${n.kind === "alert" ? "var(--amber)" : "var(--violet)"}">${n.icon}</span>
+          <div><b>${escapeHtml(n.title)}</b><p>${escapeHtml(n.detail)}</p></div>
+        </div>`).join("")
+    : `<div class="empty-state"><strong>All clear</strong><span>No alerts right now — you'll see fleet activity here as it happens.</span></div>`;
+
+  notifList.innerHTML = html;
+  inboxList.innerHTML = html;
+}
+
+/* ============================================================
+   DETAILS PANEL
+   ============================================================ */
+function openDetails(d) {
+  drawerContent.innerHTML = `
+    <div class="detail-card">
+      <div class="detail-title"><div class="device-avatar">▣</div><div><h4>${escapeHtml(d.name)}</h4><p>${escapeHtml(d.model)} · ${escapeHtml(d.group)}</p></div></div>
+    </div>
+    <div class="detail-card">
+      <div class="device-data">
+        <div class="data"><span>STATUS</span><b>${escapeHtml(d.status)}</b></div>
+        <div class="data"><span>BATTERY</span><b>${d.battery}%</b></div>
+        <div class="data"><span>VERSION</span><b>${escapeHtml(d.version)}</b></div>
+      </div>
+      <div class="device-data" style="margin-top:7px">
+        <div class="data"><span>LAST SEEN</span><b>${escapeHtml(d.last)}</b></div>
+        <div class="data"><span>COMMAND</span><b>${d.pending ? "PENDING" : "Idle"}</b></div>
+        <div class="data"><span>DOC ID</span><b title="${escapeHtml(d.id)}">${escapeHtml(d.id.slice(0, 10))}…</b></div>
+      </div>
+      ${d.possibleUninstalled ? '<div class="note-preview"><b>Attention:</b> No heartbeat for 24h+. This is an inference — possible inactive/uninstalled, not a confirmed uninstall.</div>' : ""}
+      ${d.note ? `<div class="note-preview"><b>Saved note:</b> ${escapeHtml(d.note)}</div>` : ""}
+    </div>
+    <div class="detail-card">
+      <b style="font-size:14px">Quick actions</b>
+      <div class="row" style="margin-top:12px">
+        <button class="small-btn primary" type="button" data-drawer-act="ping">Ping device</button>
+        <button class="small-btn" type="button" data-drawer-act="note">Add note</button>
+        <button class="small-btn" type="button" data-drawer-act="group">Move group</button>
+      </div>
+    </div>
+    <div class="detail-card">
+      <b style="font-size:14px">Recent activity</b>
+      <div class="timeline" style="margin-top:13px">
+        <div class="timeline-item"><div class="timeline-dot"></div><div><b>Status updated</b><span>${escapeHtml(d.last)}</span></div></div>
+        <div class="timeline-item"><div class="timeline-dot"></div><div><b>Firestore sync active</b><span>Live listener connected</span></div></div>
+      </div>
+    </div>`;
+
+  drawerContent.querySelector('[data-drawer-act="ping"]').addEventListener("click", event => queuePing(d, event.currentTarget));
+  drawerContent.querySelector('[data-drawer-act="note"]').addEventListener("click", () => editNote(d));
+  drawerContent.querySelector('[data-drawer-act="group"]').addEventListener("click", () => changeGroup(d));
+
+  openDrawerPanel();
+}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+const pageTitles = {
+  dashboard: ["DeviceOps", "Secure fleet administration"],
+  inbox: ["Work Inbox", "Alerts generated from live device state"],
+  tools: ["Tools", "Quick administrative utilities"],
+  settings: ["Settings", "Manage panel preferences"]
+};
+
+function goToPage(pageKey) {
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.toggle("active", b.dataset.page === pageKey));
+  document.querySelectorAll(".page").forEach(p => p.classList.toggle("active", p.id === `page-${pageKey}`));
+  $("headerTitle").textContent = pageTitles[pageKey][0];
+  $("headerSub").textContent = pageTitles[pageKey][1];
+  window.scrollTo(0, 0);
+}
+
+$("bottomNav").addEventListener("click", event => {
+  const btn = event.target.closest(".nav-btn");
+  if (btn) goToPage(btn.dataset.page);
+});
+
+/* ============================================================
+   SETTINGS (accordions, switches, profile)
+   ============================================================ */
+document.querySelectorAll(".setting-head").forEach(head => {
+  head.addEventListener("click", () => head.closest(".setting-card").classList.toggle("open"));
+});
+
+function bindPersistedSwitch(id, storageKey, onLabel, offLabel) {
+  const el = $(id);
+  if (!el) return;
+  const stored = localStorage.getItem(storageKey);
+  const isOn = stored === null ? el.classList.contains("on") : stored !== "off";
+  el.classList.toggle("on", isOn);
+  el.setAttribute("aria-checked", String(isOn));
+  el.addEventListener("click", () => {
+    const nowOn = !el.classList.contains("on");
+    el.classList.toggle("on", nowOn);
+    el.setAttribute("aria-checked", String(nowOn));
+    localStorage.setItem(storageKey, nowOn ? "on" : "off");
+    showToast(nowOn ? onLabel : offLabel);
+    if (storageKey === "deviceops.offlineAlerts") renderNotifications();
+  });
+}
+bindPersistedSwitch("offlineAlertsSwitch", "deviceops.offlineAlerts", "Offline alerts enabled", "Offline alerts disabled");
+bindPersistedSwitch("reducedMotionSwitch", "deviceops.reducedMotion", "Reduced motion enabled", "Reduced motion disabled");
+document.body.classList.toggle("force-reduced-motion", localStorage.getItem("deviceops.reducedMotion") === "on");
+$("reducedMotionSwitch").addEventListener("click", () => {
+  document.body.classList.toggle("force-reduced-motion", $("reducedMotionSwitch").classList.contains("on"));
+});
+
+$("saveProfileBtn").addEventListener("click", () => {
+  const name = $("profileNameInput").value.trim();
+  localStorage.setItem("deviceops.profileName", name);
+  showToast("Profile saved on this device");
+});
+
+$("testConnectionBtn").addEventListener("click", testFirestoreConnection);
+$("projectIdText").textContent = firebaseConfig.projectId;
+
+/* ============================================================
+   FILTERS / SEARCH WIRING
+   ============================================================ */
+searchInput.addEventListener("input", event => { currentSearch = event.target.value; refreshView(); });
+
+document.querySelectorAll(".filter-option[data-filter]").forEach(btn => btn.addEventListener("click", () => setFilter(btn.dataset.filter)));
+document.querySelectorAll(".smart-chip[data-filter]").forEach(btn => btn.addEventListener("click", () => setFilter(btn.dataset.filter)));
+$("clearFilterBtn").addEventListener("click", () => { searchInput.value = ""; currentSearch = ""; setFilter("ALL"); });
+
+filterBtn.addEventListener("click", event => { event.stopPropagation(); filterMenu.classList.toggle("open"); });
+document.addEventListener("click", event => {
+  if (!filterMenu.contains(event.target) && event.target !== filterBtn) filterMenu.classList.remove("open");
+});
+
+pingAllBtn.addEventListener("click", pingAllDevices);
+
+/* ============================================================
+   TOP-LEVEL & TOOLBAR ACTIONS
+   ============================================================ */
+syncBtn.addEventListener("click", () => { refreshView(); showToast("Live data refreshed"); });
+logsBtn.addEventListener("click", openAuditLog);
+$("quickSync").addEventListener("click", () => { refreshView(); showToast("Live data refreshed"); });
+$("quickLogs").addEventListener("click", openAuditLog);
+$("toolSyncBtn").addEventListener("click", () => { refreshView(); showToast("Live data refreshed"); });
+$("toolExportBtn").addEventListener("click", exportDevicesCsv);
+$("toolLogsBtn").addEventListener("click", openAuditLog);
+
+$("dockSync").addEventListener("click", () => { refreshView(); showToast("Live data refreshed"); });
+$("dockPing").addEventListener("click", pingAllDevices);
+$("dockExport").addEventListener("click", exportDevicesCsv);
+$("dockSettings").addEventListener("click", () => goToPage("settings"));
+
+$("gridViewBtn").addEventListener("click", () => {
+  document.body.classList.remove("compact");
+  $("gridViewBtn").classList.add("active"); $("listViewBtn").classList.remove("active");
+  localStorage.setItem("deviceops.view", "grid");
+});
+$("listViewBtn").addEventListener("click", () => {
+  document.body.classList.add("compact");
+  $("listViewBtn").classList.add("active"); $("gridViewBtn").classList.remove("active");
+  localStorage.setItem("deviceops.view", "list");
+});
+if (localStorage.getItem("deviceops.view") === "list") $("listViewBtn").click();
+
+/* ============================================================
+   PROFILE MENU / NOTIFICATIONS / DRAWER / FAB
+   ============================================================ */
+profileBtn.addEventListener("click", async () => {
+  const confirmed = await openSheet({
+    title: "Signed in",
+    text: `You're signed in as ${currentUser?.email || "admin"}.`,
+    mode: "confirm",
+    confirmText: "Sign out",
+    cancelText: "Close",
+    danger: true
+  });
+  if (confirmed) {
+    await signOut(auth);
+    showToast("Signed out");
+  }
+});
+
+notifBtn.addEventListener("click", openNotifPanel);
+$("closeDrawerBtn").addEventListener("click", closePanels);
+$("closeNotifBtn").addEventListener("click", closePanels);
+overlay.addEventListener("click", closePanels);
+
+fab.addEventListener("click", event => { event.stopPropagation(); fabMenu.classList.toggle("open"); });
+document.addEventListener("click", event => {
+  if (!fabMenu.contains(event.target) && event.target !== fab) fabMenu.classList.remove("open");
+});
+$("fabPingAll").addEventListener("click", () => { fabMenu.classList.remove("open"); pingAllDevices(); });
+$("fabExport").addEventListener("click", () => { fabMenu.classList.remove("open"); exportDevicesCsv(); });
+
+/* ============================================================
+   STARTUP
+   ============================================================ */
+renderSkeleton();
+updateStats();
+</script>
+</body>
+</html>
