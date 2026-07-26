@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#070910">
+<title>Device Panel Ultra</title>
+<style>
+:root{
+  --bg:#070910;
+  --bg2:#0b0f18;
+  --panel:rgba(17,22,33,.78);
+  --panel-solid:#111722;
+  --panel-2:#151c29;
+  --line:rgba(255,255,255,.075);
+  --text:#f7f9ff;
+  --muted:#8f98aa;
+  --cyan:#2dd4f0;
+  --green:#38e59c;
+  --orange:#ffa24d;
+  --purple:#b877ff;
+  --red:#ff6f7e;
+  --blue:#6f98ff;
+  --yellow:#ffd54a;
+  --shadow:0 24px 70px rgba(0,0,0,.36);
+  --radius:24px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; min-height:100vh; color:var(--text);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:
+    radial-gradient(circle at 8% -5%,rgba(45,212,240,.12),transparent 22%),
+    radial-gradient(circle at 95% 8%,rgba(184,119,255,.10),transparent 23%),
+    linear-gradient(180deg,#070910,#090d15 50%,#070910);
+  overflow-x:hidden;
+}
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none; opacity:.22;
+  background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
+  background-size:34px 34px;
+  mask-image:linear-gradient(to bottom,black,transparent 75%);
+}
+button,input{font:inherit}
+button{cursor:pointer}
+.app{max-width:1180px;margin:auto;min-height:100vh;padding-bottom:108px}
+.topbar{
+  position:sticky;top:0;z-index:40;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;
+  background:rgba(7,9,16,.76);
+  border-bottom:1px solid var(--line);
+  backdrop-filter:blur(22px);
+}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{
+  width:44px;height:44px;border-radius:15px;display:grid;place-items:center;
+  background:linear-gradient(135deg,#24d5ef,#7c58ff);
+  box-shadow:0 0 28px rgba(45,212,240,.22);
+  font-size:18px;font-weight:900;
+}
+.brand h1{font-size:21px;margin:0;letter-spacing:-.5px}
+.brand p{font-size:11px;color:var(--muted);margin:2px 0 0}
+.top-actions{display:flex;gap:8px}
+.icon-btn{
+  width:42px;height:42px;border-radius:14px;border:1px solid var(--line);
+  background:rgba(18,24,35,.84);color:#c9cfdb;font-size:16px;position:relative
+}
+.icon-btn:hover{transform:translateY(-1px);border-color:rgba(45,212,240,.3)}
+.badge{
+  position:absolute;top:6px;right:6px;min-width:8px;height:8px;border-radius:20px;
+  background:var(--red);box-shadow:0 0 12px rgba(255,111,126,.8)
+}
+.page{display:none}.page.active{display:block;animation:fade .28s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.hero{padding:20px 18px 4px}
+.hero-grid{display:grid;grid-template-columns:1.45fr .75fr;gap:14px}
+.hero-card,.health-card{
+  position:relative;overflow:hidden;border:1px solid var(--line);
+  border-radius:28px;background:linear-gradient(145deg,rgba(21,31,47,.94),rgba(13,17,27,.94));
+  box-shadow:var(--shadow)
+}
+.hero-card{padding:24px}
+.hero-card::after{
+  content:"";position:absolute;width:260px;height:260px;border-radius:50%;
+  right:-100px;top:-120px;background:radial-gradient(circle,rgba(45,212,240,.2),transparent 68%)
+}
+.hero-row{display:flex;justify-content:space-between;gap:16px;position:relative;z-index:1}
+.hero h2{margin:0;font-size:31px;letter-spacing:-1px}
+.hero p{margin:8px 0 0;color:#aab2c3;line-height:1.45;font-size:14px;max-width:520px}
+.live-pill{
+  display:inline-flex;align-items:center;gap:7px;padding:8px 11px;height:max-content;
+  border-radius:999px;font-size:11px;font-weight:900;color:#6ef0b9;
+  background:rgba(56,229,156,.08);border:1px solid rgba(56,229,156,.22)
+}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green);animation:pulse 1.7s infinite}
+@keyframes pulse{50%{transform:scale(1.25);opacity:.65}}
+.hero-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:20px}
+.btn{
+  border-radius:13px;border:1px solid #2b3444;background:#141b28;color:#e8edf6;
+  padding:11px 14px;font-size:12px;font-weight:800
+}
+.btn.primary{color:#4de2f5;border-color:rgba(45,212,240,.34);background:rgba(45,212,240,.08)}
+.health-card{padding:20px;display:flex;flex-direction:column;justify-content:space-between}
+.health-head{display:flex;justify-content:space-between;align-items:center}
+.health-head span{font-size:12px;color:var(--muted)}
+.health-score{font-size:39px;font-weight:900;letter-spacing:-1px;margin-top:8px}
+.health-score small{font-size:15px;color:var(--muted)}
+.ring{
+  width:82px;height:82px;border-radius:50%;
+  background:conic-gradient(var(--green) 0 88%,#253040 88%);
+  display:grid;place-items:center;box-shadow:inset 0 0 18px rgba(0,0,0,.3)
+}
+.ring::after{content:"";width:61px;height:61px;border-radius:50%;background:#101621}
+.health-foot{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-top:13px}
+
+.stats{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:14px 18px 8px
+}
+.stat{
+  padding:16px;border-radius:20px;border:1px solid var(--line);
+  background:linear-gradient(145deg,rgba(18,24,36,.92),rgba(13,18,27,.92));
+  transition:.2s
+}
+.stat:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.12)}
+.stat-head{display:flex;justify-content:space-between;align-items:center}
+.stat-icon{width:32px;height:32px;border-radius:11px;display:grid;place-items:center;font-size:13px}
+.stat-trend{font-size:10px;color:var(--green)}
+.stat b{font-size:26px;display:block;margin-top:11px;letter-spacing:-.5px}
+.stat span{font-size:10px;color:var(--muted);letter-spacing:.8px}
+.cyan .stat-icon{background:rgba(45,212,240,.1);color:var(--cyan)}
+.green .stat-icon{background:rgba(56,229,156,.1);color:var(--green)}
+.orange .stat-icon{background:rgba(255,162,77,.1);color:var(--orange)}
+.purple .stat-icon{background:rgba(184,119,255,.1);color:var(--purple)}
+
+.content-grid{display:grid;grid-template-columns:1.5fr .75fr;gap:14px;padding:10px 18px}
+.panel{
+  border-radius:24px;border:1px solid var(--line);background:rgba(15,20,30,.82);
+  backdrop-filter:blur(16px);box-shadow:0 18px 50px rgba(0,0,0,.22)
+}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px}
+.panel-head h3{margin:0;font-size:17px}
+.panel-head span{color:var(--muted);font-size:11px}
+.chart-wrap{padding:6px 16px 16px}
+.chart{
+  height:180px;border-radius:18px;border:1px solid #222b3a;
+  background:linear-gradient(180deg,rgba(45,212,240,.04),transparent),#0d131c;
+  position:relative;overflow:hidden
+}
+.chart-grid{position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px);background-size:100% 36px}
+.chart svg{position:absolute;inset:12px;width:calc(100% - 24px);height:calc(100% - 24px)}
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 14px 14px}
+.quick{
+  min-height:84px;border-radius:17px;border:1px solid #273043;background:#111824;color:white;
+  text-align:left;padding:13px
+}
+.quick strong{display:block;font-size:15px;margin-top:7px}
+.quick span{font-size:10px;color:var(--muted)}
+.quick-icon{font-size:17px;color:var(--cyan)}
+
+.toolbar{
+  margin:8px 18px 14px;padding:10px;
+  display:grid;grid-template-columns:1fr auto auto;gap:9px;
+  border:1px solid var(--line);border-radius:20px;background:#0d121b
+}
+.search{display:flex;align-items:center;gap:8px;padding:0 12px;border:1px solid #293242;border-radius:13px;background:#131a26;color:#7e8797}
+.search input{width:100%;border:0;outline:0;background:transparent;color:white;padding:12px 0}
+.toolbar button{min-width:46px}
+.section-head{display:flex;align-items:center;justify-content:space-between;padding:0 18px 11px}
+.section-head h3{margin:0;font-size:18px}
+.section-head div{display:flex;gap:8px}
+.view-btn{width:34px;height:34px;border-radius:11px;border:1px solid var(--line);background:#111722;color:#8b94a5}
+.view-btn.active{color:var(--cyan);border-color:rgba(45,212,240,.25)}
+.device-list{display:grid;grid-template-columns:repeat(2,1fr);gap:13px;padding:0 18px}
+.device{
+  border-radius:21px;border:1px solid #202938;background:linear-gradient(145deg,#111824,#0d131c);
+  padding:15px;box-shadow:0 14px 38px rgba(0,0,0,.2);transition:.2s
+}
+.device:hover{transform:translateY(-2px);border-color:rgba(45,212,240,.2)}
+.device-top{display:grid;grid-template-columns:48px 1fr auto;gap:11px;align-items:center}
+.device-avatar{
+  width:48px;height:48px;border-radius:15px;display:grid;place-items:center;
+  background:linear-gradient(145deg,#202a3e,#171d2a);border:1px solid #2b3850;
+  font-size:17px;position:relative
+}
+.device-avatar::after{content:"";position:absolute;right:-1px;bottom:2px;width:10px;height:10px;border-radius:50%;background:var(--green);border:2px solid #111824}
+.device.offline .device-avatar::after{background:var(--orange)}
+.device h4{margin:0;font-size:15px}
+.device-meta{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.chip{padding:4px 6px;border-radius:7px;border:1px solid #2d3645;background:#151b26;color:#9ba3b1;font-size:9px;font-weight:850}
+.chip.blue{color:#91acff;border-color:#36466f}.chip.orange{color:#ffb873;border-color:#65431f}.chip.purple{color:#d18dff;border-color:#4e3164}
+.battery{text-align:right;color:var(--green);font-size:13px;font-weight:900}
+.battery small{display:block;color:var(--muted);font-size:9px;margin-top:3px}
+.device-data{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.data{padding:10px;border-radius:13px;border:1px solid #273142;background:#0d141e}
+.data span{font-size:8px;color:var(--muted);letter-spacing:.6px;display:block}
+.data b{font-size:12px;display:block;margin-top:4px}
+.device-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:11px}
+.device-actions button{min-height:48px;border-radius:13px;border:1px solid #263043;background:#121927;color:#8da8ff;font-size:9px;font-weight:850}
+.device-actions button strong{display:block;font-size:14px;margin-bottom:3px}
+.device-actions .note{color:#ce8aff}.device-actions .folder{color:#ffd14e}.device-actions .more{color:#ff8eaf}
+
+.settings{padding:18px}
+.settings-title{margin:0 0 4px;font-size:27px}
+.settings-sub{margin:0 0 18px;color:var(--muted);font-size:13px}
+.setting-card{border:1px solid var(--line);border-radius:19px;background:#111722;margin-bottom:12px;overflow:hidden}
+.setting-head{width:100%;padding:14px;border:0;background:transparent;color:white;display:grid;grid-template-columns:42px 1fr auto;gap:11px;align-items:center;text-align:left}
+.setting-icon{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:16px}
+.setting-icon.cyan{background:rgba(45,212,240,.1);color:var(--cyan)}.setting-icon.yellow{background:rgba(255,213,74,.1);color:var(--yellow)}
+.setting-icon.purple{background:rgba(184,119,255,.1);color:var(--purple)}.setting-icon.green{background:rgba(56,229,156,.1);color:var(--green)}
+.setting-icon.blue{background:rgba(111,152,255,.1);color:var(--blue)}
+.setting-name{font-size:16px;font-weight:850}.setting-desc{font-size:11px;color:var(--muted);margin-top:3px}
+.chev{color:#8a93a4;transition:.2s}.setting-card.open .chev{transform:rotate(180deg)}
+.setting-body{display:none;padding:0 14px 14px}.setting-card.open .setting-body{display:block}
+.divider{height:1px;background:#252c39;margin-bottom:11px}
+.option{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #242b37}
+.option:last-child{border-bottom:0}.option b{display:block;font-size:13px}.option span{display:block;color:var(--muted);font-size:10px;margin-top:3px}
+.switch{width:43px;height:25px;border:0;border-radius:99px;background:#323947;position:relative}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:white;transition:.2s}
+.switch.on{background:#1ebf86}.switch.on::after{left:21px}
+.field{margin-bottom:10px}.field label{display:block;color:var(--muted);font-size:10px;margin-bottom:5px}.field input{width:100%;padding:11px;border-radius:11px;border:1px solid #2b3442;background:#0c121b;color:white}
+.row{display:flex;gap:8px;flex-wrap:wrap}.small-btn{padding:10px 12px;border-radius:11px;border:1px solid #303848;background:#171d29;color:#e8ebf2}.small-btn.primary{color:#47e0f3;border-color:#176d78;background:rgba(45,212,240,.06)}.small-btn.danger{color:#ff7d8a;border-color:#65313a;background:rgba(255,111,126,.06)}
+
+.drawer,.notif{
+  position:fixed;top:0;right:-420px;width:min(390px,100%);height:100vh;z-index:90;
+  background:rgba(10,14,22,.96);border-left:1px solid var(--line);backdrop-filter:blur(22px);
+  transition:.28s;box-shadow:-20px 0 60px rgba(0,0,0,.4);padding:18px;overflow:auto
+}
+.drawer.open,.notif.open{right:0}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:80;opacity:0;pointer-events:none;transition:.25s}
+.overlay.show{opacity:1;pointer-events:auto}
+.drawer-head,.notif-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.drawer-head h3,.notif-head h3{margin:0;font-size:21px}
+.close{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:#151b26;color:#ccd2dd}
+.detail-card{border:1px solid var(--line);border-radius:20px;background:#111722;padding:15px;margin-bottom:12px}
+.detail-title{display:flex;align-items:center;gap:11px}.detail-title h4{margin:0;font-size:16px}.detail-title p{margin:3px 0 0;color:var(--muted);font-size:11px}
+.timeline{display:grid;gap:10px}.timeline-item{display:grid;grid-template-columns:10px 1fr;gap:9px}.timeline-dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);margin-top:5px}.timeline-item b{font-size:12px}.timeline-item span{font-size:10px;color:var(--muted);display:block;margin-top:3px}
+.notif-item{border:1px solid var(--line);border-radius:16px;background:#111722;padding:13px;margin-bottom:9px}.notif-item b{font-size:13px}.notif-item p{font-size:11px;color:var(--muted);margin:5px 0 0}
+
+.fab{
+  position:fixed;right:22px;bottom:92px;z-index:50;width:54px;height:54px;border-radius:18px;
+  border:1px solid rgba(45,212,240,.3);background:linear-gradient(135deg,#20cfe9,#7554ff);color:white;font-size:22px;
+  box-shadow:0 15px 34px rgba(45,212,240,.2)
+}
+.fab-menu{position:fixed;right:22px;bottom:153px;z-index:49;display:grid;gap:8px;opacity:0;pointer-events:none;transform:translateY(10px);transition:.2s}
+.fab-menu.open{opacity:1;pointer-events:auto;transform:none}
+.fab-menu button{padding:10px 13px;border-radius:12px;border:1px solid var(--line);background:#151c29;color:white;box-shadow:var(--shadow);font-size:11px;text-align:left}
+
+.bottom-nav{
+  position:fixed;left:50%;bottom:12px;transform:translateX(-50%);width:min(590px,calc(100% - 24px));z-index:60;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:8px;border-radius:22px;
+  background:rgba(12,16,25,.92);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(22px);box-shadow:0 16px 50px rgba(0,0,0,.45)
+}
+.nav-btn{min-height:56px;border:0;border-radius:16px;background:transparent;color:#80899a;font-size:10px;font-weight:800}
+.nav-btn strong{display:block;font-size:16px;margin-bottom:4px}.nav-btn.active{background:rgba(45,212,240,.09);color:#4ce1f3}
+
+.toast{position:fixed;left:50%;bottom:87px;transform:translateX(-50%) translateY(15px);padding:11px 14px;border-radius:12px;background:#151c28;border:1px solid #2d3543;opacity:0;transition:.22s;z-index:120;font-size:12px}.toast.show{opacity:1;transform:translateX(-50%)}
+
+@media(max-width:900px){
+  .hero-grid,.content-grid{grid-template-columns:1fr}
+  .device-list{grid-template-columns:1fr}
+}
+@media(max-width:650px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .toolbar{grid-template-columns:1fr auto}.search{grid-column:1/-1}
+  .health-card{display:none}
+  .hero h2{font-size:25px}
+  .device-data{grid-template-columns:1fr 1fr 1fr}
+}
+@media(max-width:420px){
+  .hero-card{padding:19px}.hero-row{display:block}.live-pill{margin-top:13px}
+  .device-data{grid-template-columns:1fr}
+  .fab{right:17px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">D</div>
+    <div><h1 id="headerTitle">Device Panel</h1><p id="headerSub">Premium device operations</p></div>
+  </div>
+  <div class="top-actions">
+    <button class="icon-btn" id="notifBtn">◔<span class="badge"></span></button>
+    <button class="icon-btn" id="profileBtn">◉</button>
+  </div>
+</header>
+
+<main class="page active" id="dashboard">
+  <section class="hero">
+    <div class="hero-grid">
+      <div class="hero-card">
+        <div class="hero-row">
+          <div>
+            <h2>Control center, simplified.</h2>
+            <p>Monitor approved devices, track status, manage notes and run legitimate administrative actions from one clean dashboard.</p>
+          </div>
+          <span class="live-pill"><span class="live-dot"></span> LIVE SYNC</span>
+        </div>
+        <div class="hero-actions">
+          <button class="btn primary" id="syncBtn">↻ Sync devices</button>
+          <button class="btn" id="addBtn">＋ Add device</button>
+          <button class="btn" id="logsBtn">▤ Audit logs</button>
+        </div>
+      </div>
+      <div class="health-card">
+        <div class="health-head"><span>Network health</span><div class="ring"></div></div>
+        <div class="health-score">88<small>/100</small></div>
+        <div class="health-foot"><span>Stable</span><span>Updated now</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="stat cyan"><div class="stat-head"><div class="stat-icon">▣</div><div class="stat-trend">+2 this week</div></div><b id="totalCount">0</b><span>TOTAL DEVICES</span></div>
+    <div class="stat green"><div class="stat-head"><div class="stat-icon">●</div><div class="stat-trend">Live</div></div><b id="onlineCount">0</b><span>ONLINE</span></div>
+    <div class="stat orange"><div class="stat-head"><div class="stat-icon">⌁</div><div class="stat-trend">Needs review</div></div><b id="offlineCount">0</b><span>OFFLINE</span></div>
+    <div class="stat purple"><div class="stat-head"><div class="stat-icon">◌</div><div class="stat-trend">Queued</div></div><b id="pendingCount">0</b><span>PENDING</span></div>
+  </section>
+
+  <section class="content-grid">
+    <div class="panel">
+      <div class="panel-head"><h3>Device activity</h3><span>Last 7 days</span></div>
+      <div class="chart-wrap">
+        <div class="chart">
+          <div class="chart-grid"></div>
+          <svg viewBox="0 0 700 180" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#2dd4f0" stop-opacity=".28"/>
+                <stop offset="100%" stop-color="#2dd4f0" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path d="M0,145 C70,120 95,140 155,98 C230,45 270,120 340,86 C410,52 460,78 520,48 C590,16 640,50 700,30 L700,180 L0,180 Z" fill="url(#fill)"/>
+            <path d="M0,145 C70,120 95,140 155,98 C230,45 270,120 340,86 C410,52 460,78 520,48 C590,16 640,50 700,30" fill="none" stroke="#2dd4f0" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>Quick actions</h3><span>Most used</span></div>
+      <div class="quick-grid">
+        <button class="quick"><div class="quick-icon">↻</div><strong>Sync all</strong><span>Refresh statuses</span></button>
+        <button class="quick"><div class="quick-icon">▣</div><strong>Groups</strong><span>Manage folders</span></button>
+        <button class="quick"><div class="quick-icon">□</div><strong>Notes</strong><span>Open device notes</span></button>
+        <button class="quick"><div class="quick-icon">▤</div><strong>Logs</strong><span>View recent activity</span></button>
+      </div>
+    </div>
+  </section>
+
+  <section class="toolbar">
+    <label class="search">⌕ <input id="search" placeholder="Search devices, groups or models"></label>
+    <button class="btn primary" id="pingAll">Ping all</button>
+    <button class="btn" id="filterBtn">☷</button>
+  </section>
+
+  <div class="section-head">
+    <h3>Managed devices</h3>
+    <div><button class="view-btn active">▦</button><button class="view-btn">☰</button></div>
+  </div>
+  <section class="device-list" id="deviceList"></section>
+</main>
+
+<main class="page" id="inbox">
+  <section class="settings">
+    <h2 class="settings-title">Work Inbox</h2>
+    <p class="settings-sub">Approved operational alerts and device reports.</p>
+    <article class="setting-card open">
+      <button class="setting-head"><div class="setting-icon cyan">▤</div><div><div class="setting-name">System healthy</div><div class="setting-desc">No critical alerts right now</div></div><div class="chev">⌄</div></button>
+      <div class="setting-body"><div class="divider"></div><div class="option"><div><b>2 status updates</b><span>Devices reconnected successfully</span></div><span style="color:#38e59c">Resolved</span></div></div>
+    </article>
+  </section>
+</main>
+
+<main class="page" id="tools">
+  <section class="settings">
+    <h2 class="settings-title">Tools</h2>
+    <p class="settings-sub">Administrative utilities for your managed fleet.</p>
+    <article class="setting-card open">
+      <button class="setting-head"><div class="setting-icon purple">✦</div><div><div class="setting-name">Device tools</div><div class="setting-desc">Common fleet actions</div></div><div class="chev">⌄</div></button>
+      <div class="setting-body"><div class="divider"></div><div class="row"><button class="small-btn primary">Sync devices</button><button class="small-btn">Export list</button><button class="small-btn">Audit logs</button><button class="small-btn">Create group</button></div></div>
+    </article>
+  </section>
+</main>
+
+<main class="page" id="settings">
+  <section class="settings">
+    <h2 class="settings-title">Settings</h2>
+    <p class="settings-sub">All previous settings are preserved here.</p>
+
+    <article class="setting-card open">
+      <button class="setting-head"><div class="setting-icon cyan">♢</div><div><div class="setting-name">Profile</div><div class="setting-desc">Admin account details</div></div><div class="chev">⌄</div></button>
+      <div class="setting-body"><div class="divider"></div><div class="field"><label>Display name</label><input value="Panel Admin"></div><div class="field"><label>Email</label><input value="admin@example.com"></div><button class="small-btn primary">Save profile</button></div>
+    </article>
+
+    <article class="setting-card">
+      <button class="setting-head"><div class="setting-icon yellow">▢</div><div><div class="setting-name">Device Vault</div><div class="setting-desc">Protection for selected device groups</div></div><div class="chev">⌄</div></button>
+      <div class="setting-body"><div class="divider"></div><div class="option"><div><b>Vault mode</b><span>Hide protected groups</span></div><button class="switch"></button></div><div class="option"><div><b>Confirm access</b><span>Ask before opening protected data</span></div><button class="switch on"></button></div></div>
+    </article>
+
+    <article class="setting-card">
+      <button class="setting-head"><div class="setting-icon purple">▤</div><div><div class="setting-name">Firebase Accounts</div><div class="setting-desc">Project and sync configuration</div></div><div class="chev">⌄</div></button>
+      <div class="setting-body"><div class="divider"></div><div class="option"><div><b>Primary Project</b><span>device-panel-main</span></div><span style="color:#38e59c">Active</span></div><div class="option"><div><b>Backup Project</b><span>device-panel-backup</span></div><span style="color:#ffd54a">Standby</span></div><div class="row" style="margin-top:11px"><button class="small-btn primary">Add project</button><button class="small-btn">Test connection</button></div></div>
+    </article>
+
+    <article class="setting-card">
+      <button class="setting-head"><div class="setting-icon green">♢</div><div><div class="setting-name">Security</div><div class="setting-desc">2FA, passwords and login alerts</div></div><div class="chev">⌄</div></button>
+      <div class="setting-body"><div class="divider"></div><div class="option"><div><b>Two-factor authentication</b><span>Protect administrator access</span></div><button class="switch on"></button></div><div class="option"><div><b>Login alerts</b><span>Notify on new sessions</span></div><button class="switch on"></button></div><div class="row" style="margin-top:11px"><button class="small-btn">Change password</button><button class="small-btn danger">Sign out all</button></div></div>
+    </article>
+
+    <article class="setting-card">
+      <button class="setting-head"><div class="setting-icon blue">▣</div><div><div class="setting-name">Active Sessions</div><div class="setting-desc">Devices currently signed in</div></div><div class="chev">⌄</div></button>
+      <div class="setting-body"><div class="divider"></div><div class="option"><div><b>iPhone 13</b><span>Safari · Current session</span></div><span style="color:#38e59c">Now</span></div><div class="option"><div><b>Windows PC</b><span>Chrome · Admin session</span></div><button class="small-btn danger">Revoke</button></div></div>
+    </article>
+
+    <article class="setting-card">
+      <button class="setting-head"><div class="setting-icon cyan">◔</div><div><div class="setting-name">Notifications</div><div class="setting-desc">Status, security and device alerts</div></div><div class="chev">⌄</div></button>
+      <div class="setting-body"><div class="divider"></div><div class="option"><div><b>Offline alerts</b><span>Notify when devices stop reporting</span></div><button class="switch on"></button></div><div class="option"><div><b>Security alerts</b><span>Important account events</span></div><button class="switch on"></button></div></div>
+    </article>
+  </section>
+</main>
+</div>
+
+<button class="fab" id="fab">＋</button>
+<div class="fab-menu" id="fabMenu">
+  <button>Add device</button><button>Create group</button><button>Add note</button>
+</div>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" data-page="dashboard"><strong>▣</strong>Devices</button>
+  <button class="nav-btn" data-page="inbox"><strong>▤</strong>Inbox</button>
+  <button class="nav-btn" data-page="tools"><strong>✦</strong>Tools</button>
+  <button class="nav-btn" data-page="settings"><strong>⚙</strong>Settings</button>
+</nav>
+
+<div class="overlay" id="overlay"></div>
+
+<aside class="drawer" id="drawer">
+  <div class="drawer-head"><h3>Device details</h3><button class="close" id="closeDrawer">✕</button></div>
+  <div id="drawerContent"></div>
+</aside>
+
+<aside class="notif" id="notif">
+  <div class="notif-head"><h3>Notifications</h3><button class="close" id="closeNotif">✕</button></div>
+  <div class="notif-item"><b>Device reconnected</b><p>Warehouse Phone 03 is back online.</p></div>
+  <div class="notif-item"><b>Sync completed</b><p>All approved device records were refreshed.</p></div>
+  <div class="notif-item"><b>Security check</b><p>No unusual admin login activity detected.</p></div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCDeZNmNBjgh2gcGdYzqkpGsW9it7vvO14",
+  authDomain: "device-panel-aace1.firebaseapp.com",
+  projectId: "device-panel-aace1",
+  storageBucket: "device-panel-aace1.firebasestorage.app",
+  messagingSenderId: "558334945656",
+  appId: "1:558334945656:web:7344e039f91767136e008d"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let devices = [];
+let currentSearch = "";
+
+const list = document.getElementById("deviceList");
+const toast = document.getElementById("toast");
+const overlay = document.getElementById("overlay");
+const drawer = document.getElementById("drawer");
+const notif = document.getElementById("notif");
+const headerTitle = document.getElementById("headerTitle");
+const headerSub = document.getElementById("headerSub");
+const searchInput = document.getElementById("search");
+const pingAll = document.getElementById("pingAll");
+const filterBtn = document.getElementById("filterBtn");
+const syncBtn = document.getElementById("syncBtn");
+const addBtn = document.getElementById("addBtn");
+const logsBtn = document.getElementById("logsBtn");
+const profileBtn = document.getElementById("profileBtn");
+const notifBtn = document.getElementById("notifBtn");
+const fab = document.getElementById("fab");
+const fabMenu = document.getElementById("fabMenu");
+
+function escapeHtml(value = "") {
+  return String(value).replace(/[&<>'"]/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
+  })[char]);
+}
+
+function normalizeDevice(id, data) {
+  const rawStatus = String(data.status || "OFFLINE").toUpperCase();
+  return {
+    id,
+    name: data.name || data.deviceName || "Unnamed device",
+    model: data.model || "Unknown",
+    version: data.version || data.appVersion || "—",
+    group: data.group || "UNASSIGNED",
+    status: rawStatus === "ONLINE" ? "ONLINE" : "OFFLINE",
+    battery: Math.max(0, Math.min(100, Number(data.battery ?? 0))),
+    last: data.last || data.lastActive || "Not reported",
+    pending: Boolean(data.pending)
+  };
+}
+
+function showToast(text) {
+  toast.textContent = text;
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 1900);
+}
+
+function setCount(id, target) {
+  const el = document.getElementById(id);
+  const current = Number(el.textContent) || 0;
+  if (current === target) return;
+  const direction = target > current ? 1 : -1;
+  let value = current;
+  const timer = setInterval(() => {
+    value += direction;
+    el.textContent = value;
+    if (value === target) clearInterval(timer);
+  }, 35);
+}
+
+function updateStats() {
+  setCount("totalCount", devices.length);
+  setCount("onlineCount", devices.filter(d => d.status === "ONLINE").length);
+  setCount("offlineCount", devices.filter(d => d.status === "OFFLINE").length);
+  setCount("pendingCount", devices.filter(d => d.pending).length);
+}
+
+function filteredDevices() {
+  const q = currentSearch.trim().toLowerCase();
+  if (!q) return devices;
+  return devices.filter(d => [d.name, d.model, d.group, d.status, d.version]
+    .some(value => String(value).toLowerCase().includes(q)));
+}
+
+function render(items) {
+  list.innerHTML = "";
+
+  if (!items.length) {
+    list.innerHTML = `
+      <article class="device" style="grid-column:1/-1;text-align:center;padding:28px">
+        <div style="font-size:27px;margin-bottom:10px">▣</div>
+        <h4 style="margin:0 0 7px">No devices found</h4>
+        <p style="margin:0;color:var(--muted);font-size:12px">
+          Add documents inside the <b>devices</b> collection in Firestore.
+        </p>
+      </article>`;
+    return;
+  }
+
+  items.forEach(d => {
+    const el = document.createElement("article");
+    el.className = "device " + (d.status === "OFFLINE" ? "offline" : "");
+    el.innerHTML = `
+      <div class="device-top">
+        <div class="device-avatar">▣</div>
+        <div><h4>${escapeHtml(d.name)}</h4><div class="device-meta">
+          <span class="chip">${escapeHtml(d.model)}</span>
+          <span class="chip purple">${escapeHtml(d.version)}</span>
+          <span class="chip blue">${escapeHtml(d.group)}</span>
+          <span class="chip orange">${escapeHtml(d.status)}</span>
+        </div></div>
+        <div class="battery">${d.battery}%<small>Battery</small></div>
+      </div>
+      <div class="device-data">
+        <div class="data"><span>ENROLLMENT</span><b>Active</b></div>
+        <div class="data"><span>LAST ACTIVE</span><b>${escapeHtml(d.last)}</b></div>
+        <div class="data"><span>HEALTH</span><b>${d.status === "ONLINE" ? "Good" : "Review"}</b></div>
+      </div>
+      <div class="device-actions">
+        <button data-action="Ping"><strong>⌁</strong>Ping</button>
+        <button class="note" data-action="Note"><strong>□</strong>Note</button>
+        <button class="folder" data-action="Folder"><strong>▣</strong>Folder</button>
+        <button class="more" data-detail="${escapeHtml(d.id)}"><strong>•••</strong>Details</button>
+      </div>`;
+
+    el.querySelectorAll("[data-action]").forEach(btn => {
+      btn.onclick = event => {
+        event.stopPropagation();
+        showToast(`${btn.dataset.action}: ${d.name}`);
+      };
+    });
+    el.querySelector("[data-detail]").onclick = event => {
+      event.stopPropagation();
+      openDrawer(d);
+    };
+    el.onclick = () => openDrawer(d);
+    list.appendChild(el);
+  });
+}
+
+function refreshView() {
+  render(filteredDevices());
+  updateStats();
+}
+
+function openDrawer(d) {
+  document.getElementById("drawerContent").innerHTML = `
+    <div class="detail-card">
+      <div class="detail-title"><div class="device-avatar">▣</div><div>
+        <h4>${escapeHtml(d.name)}</h4>
+        <p>${escapeHtml(d.model)} · ${escapeHtml(d.group)}</p>
+      </div></div>
+    </div>
+    <div class="detail-card"><div class="device-data">
+      <div class="data"><span>STATUS</span><b>${escapeHtml(d.status)}</b></div>
+      <div class="data"><span>BATTERY</span><b>${d.battery}%</b></div>
+      <div class="data"><span>VERSION</span><b>${escapeHtml(d.version)}</b></div>
+    </div></div>
+    <div class="detail-card"><b style="font-size:14px">Quick actions</b><div class="row" style="margin-top:12px">
+      <button class="small-btn primary" data-drawer-action="Ping device">Ping device</button>
+      <button class="small-btn" data-drawer-action="Add note">Add note</button>
+      <button class="small-btn" data-drawer-action="Move group">Move group</button>
+    </div></div>
+    <div class="detail-card"><b style="font-size:14px">Recent activity</b><div class="timeline" style="margin-top:13px">
+      <div class="timeline-item"><div class="timeline-dot"></div><div><b>Status updated</b><span>${escapeHtml(d.last)}</span></div></div>
+      <div class="timeline-item"><div class="timeline-dot"></div><div><b>Firestore sync active</b><span>Live listener connected</span></div></div>
+    </div></div>`;
+
+  document.querySelectorAll("[data-drawer-action]").forEach(btn => {
+    btn.onclick = () => showToast(`${btn.dataset.drawerAction}: ${d.name}`);
+  });
+  drawer.classList.add("open");
+  overlay.classList.add("show");
+}
+
+function closePanels() {
+  drawer.classList.remove("open");
+  notif.classList.remove("open");
+  overlay.classList.remove("show");
+}
+
+document.getElementById("closeDrawer").onclick = closePanels;
+document.getElementById("closeNotif").onclick = closePanels;
+overlay.onclick = closePanels;
+
+document.querySelectorAll(".nav-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.page).classList.add("active");
+    const titles = {
+      dashboard: ["Device Panel", "Premium device operations"],
+      inbox: ["Work Inbox", "Approved alerts and reports"],
+      tools: ["Tools", "Quick administrative utilities"],
+      settings: ["Settings", "Manage panel preferences"]
+    };
+    headerTitle.textContent = titles[btn.dataset.page][0];
+    headerSub.textContent = titles[btn.dataset.page][1];
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+});
+
+document.querySelectorAll(".setting-head").forEach(h => {
+  h.onclick = () => h.closest(".setting-card").classList.toggle("open");
+});
+
+document.querySelectorAll(".switch").forEach(s => {
+  s.onclick = event => {
+    event.stopPropagation();
+    s.classList.toggle("on");
+    showToast(s.classList.contains("on") ? "Setting enabled" : "Setting disabled");
+  };
+});
+
+document.querySelectorAll(".small-btn,.quick,.fab-menu button").forEach(b => {
+  b.onclick = () => showToast(b.textContent.trim());
+});
+
+searchInput.addEventListener("input", event => {
+  currentSearch = event.target.value;
+  render(filteredDevices());
+});
+
+pingAll.onclick = () => showToast("Ping action will be connected in the commands step");
+filterBtn.onclick = () => showToast("Filters opened");
+syncBtn.onclick = () => showToast("Firestore sync is automatic");
+addBtn.onclick = () => showToast("Add devices from Firestore for now");
+logsBtn.onclick = () => showToast("Audit logs will be connected next");
+profileBtn.onclick = () => document.querySelector('[data-page="settings"]').click();
+notifBtn.onclick = () => {
+  notif.classList.add("open");
+  overlay.classList.add("show");
+};
+fab.onclick = () => fabMenu.classList.toggle("open");
+
+list.innerHTML = `
+  <article class="device" style="grid-column:1/-1;text-align:center;padding:28px">
+    <div class="live-dot" style="margin:0 auto 13px"></div>
+    <h4 style="margin:0 0 7px">Connecting to Firebase…</h4>
+    <p style="margin:0;color:var(--muted);font-size:12px">Loading live device records.</p>
+  </article>`;
+
+onSnapshot(
+  collection(db, "devices"),
+  snapshot => {
+    devices = snapshot.docs.map(doc => normalizeDevice(doc.id, doc.data()));
+    refreshView();
+    showToast(`Live sync: ${devices.length} device${devices.length === 1 ? "" : "s"}`);
+  },
+  error => {
+    console.error("Firestore listener error:", error);
+    devices = [];
+    updateStats();
+    list.innerHTML = `
+      <article class="device offline" style="grid-column:1/-1;padding:24px">
+        <h4 style="margin:0 0 8px">Firebase connection blocked</h4>
+        <p style="margin:0;color:var(--muted);font-size:12px;line-height:1.55">
+          ${escapeHtml(error.message)}<br><br>
+          Check that Firestore exists and its Security Rules allow your panel to read the <b>devices</b> collection.
+        </p>
+      </article>`;
+    showToast("Firebase connection error");
+  }
+);
+</script>
+</body>
+</html>
