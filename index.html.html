@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#060812">
+<title>Device Panel</title>
+<style>
+:root{
+  --bg:#060812;
+  --panel:#10131d;
+  --panel2:#141925;
+  --line:#2a2f3b;
+  --text:#f7f8fd;
+  --muted:#8e93a3;
+  --cyan:#21d9f3;
+  --green:#3fe38d;
+  --orange:#ff9b31;
+  --purple:#c16dff;
+  --red:#ff6678;
+  --blue:#4d91ff;
+  --yellow:#ffc52f;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{min-height:100vh;background:
+radial-gradient(circle at 8% 4%,rgba(22,215,245,.08),transparent 24%),
+radial-gradient(circle at 90% 10%,rgba(130,68,255,.07),transparent 25%),
+#060812}
+button,input{font:inherit}
+button{cursor:pointer}
+.app{max-width:900px;margin:auto;min-height:100vh;padding-bottom:80px}
+.header{display:flex;justify-content:space-between;align-items:center;padding:28px 24px 25px;border-bottom:1px solid #1d2230}
+.brand{display:flex;align-items:center;gap:16px}
+.logo{width:62px;height:62px;border-radius:20px;background:linear-gradient(135deg,#1fc7e8,#8d43ee);display:grid;place-items:center;font-size:29px;box-shadow:0 0 24px rgba(33,217,243,.2)}
+.brand h1{margin:0;font-size:31px;letter-spacing:-1px}
+.brand p{margin:7px 0 0;color:#9b9fad;font-size:17px}
+.logout{width:61px;height:61px;border:1px solid rgba(255,102,120,.42);border-radius:18px;background:rgba(255,71,94,.12);color:#ff7585;font-size:28px}
+.tabs{display:grid;grid-template-columns:1fr 1.15fr .95fr .55fr;gap:12px;padding:20px 22px;border-bottom:1px solid #1d2230}
+.tab{min-height:72px;border-radius:17px;border:1px solid #252a35;background:#10131a;color:#9ba0ad;font-weight:750;font-size:16px;display:flex;align-items:center;justify-content:center;gap:10px;transition:.2s}
+.tab:hover{transform:translateY(-2px)}
+.tab.active{color:#20e3c2;border-color:#08ae8b;background:rgba(0,208,166,.08);box-shadow:0 0 20px rgba(0,208,166,.08)}
+.page{display:none}
+.page.active{display:block;animation:fade .23s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:28px 22px 20px}
+.stat{padding:24px 12px;border-radius:24px;text-align:center;border:1px solid var(--line);background:#0d121b}
+.stat .icon{font-size:30px;margin-bottom:12px}
+.stat b{display:block;font-size:33px}
+.stat span{display:block;color:#959dad;letter-spacing:1.6px;font-size:13px;margin-top:9px}
+.stat.cyan{color:var(--cyan);background:rgba(0,217,255,.07);border-color:rgba(0,217,255,.28)}
+.stat.green{color:var(--green);background:rgba(33,230,165,.07);border-color:rgba(33,230,165,.27)}
+.stat.orange{color:var(--orange);background:rgba(255,138,43,.07);border-color:rgba(255,138,43,.28)}
+.stat.purple{color:var(--purple);background:rgba(189,108,255,.07);border-color:rgba(189,108,255,.28)}
+.control{margin:14px 22px 22px;padding:20px;border:1px solid #202733;border-radius:26px;background:#080c12}
+.control-top{display:grid;grid-template-columns:1.3fr .92fr .72fr;gap:12px}
+.search{display:flex;align-items:center;gap:10px;background:#11151d;border:1px solid #2b2f3a;border-radius:14px;padding:0 16px}
+.search input{width:100%;background:transparent;border:0;outline:0;color:white;padding:17px 0}
+.action{border-radius:14px;border:1px solid #2b2f3a;background:#11151d;color:#e6e9f0;font-weight:750}
+.action.ping{color:#55e7ff;border-color:#00cbe8;background:rgba(0,203,232,.08)}
+.control-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:16px}
+.auto{display:flex;align-items:center;gap:11px;color:#a9afbd}
+.check{width:56px;height:56px;border:0;border-radius:10px;background:#19bad5;color:#00131a;font-size:24px}
+.clock{display:flex;align-items:center;gap:9px;color:#aab1bf;font-variant-numeric:tabular-nums}
+.dot{width:10px;height:10px;border-radius:50%;background:#21caec;box-shadow:0 0 12px #21caec}
+.folder-create{margin:0 22px 28px;padding:22px;border:1px dashed #343a48;border-radius:14px;background:#101318;color:#b9beca;width:calc(100% - 44px);font-size:18px}
+.device-list{display:grid;gap:24px;padding:0 22px}
+.device-card{border-radius:28px;background:linear-gradient(145deg,#0e1320,#0b0f18);border:1px solid #161d2a;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.32);position:relative;overflow:hidden}
+.device-card::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:5px;border-radius:6px;background:linear-gradient(#28dfff,#6557ff)}
+.device-head{display:grid;grid-template-columns:78px 1fr auto;gap:15px;align-items:center}
+.avatar{width:78px;height:78px;border-radius:18px;background:linear-gradient(180deg,rgba(95,113,171,.35),rgba(40,29,69,.55));border:1px solid #24314c;display:grid;place-items:center;font-size:34px}
+.device-title h3{margin:0;font-size:24px}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.tag{border:1px solid #313947;background:#141a24;border-radius:9px;padding:5px 8px;color:#9198a7;font-size:12px;font-weight:800;letter-spacing:.8px}
+.tag.orange{color:#ffad50;border-color:#6d3b13}.tag.purple{color:#cc83ff;border-color:#4f2766}.tag.blue{color:#708dff;border-color:#283268}
+.battery{display:flex;align-items:center;gap:9px;color:#27e4a6;font-size:21px;font-weight:850}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
+.info{border-radius:22px;padding:20px;border:1px solid #263149;background:#0b1019}
+.info.red{background:rgba(255,55,86,.09);border-color:rgba(255,55,86,.3)}
+.info.blue{background:rgba(42,106,255,.07);border-color:rgba(42,106,255,.27)}
+.info small{display:block;font-weight:800;letter-spacing:1.3px;margin-bottom:13px}
+.info strong{font-size:22px}
+.device-actions{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:18px}
+.device-actions button{min-height:88px;border-radius:19px;border:1px solid #252e46;background:#111729;color:#7d91ff;font-size:12px;font-weight:850}
+.device-actions button span{display:block;font-size:26px;margin-bottom:8px}
+
+/* SETTINGS */
+.settings-wrap{padding:18px 22px 40px}
+.settings-card{border:1px solid #2c303a;border-radius:26px;background:linear-gradient(145deg,#131620,#0f121b);margin-bottom:18px;overflow:hidden;box-shadow:0 16px 34px rgba(0,0,0,.22)}
+.settings-head{width:100%;border:0;background:transparent;color:white;padding:24px;display:grid;grid-template-columns:72px 1fr auto;gap:16px;align-items:center;text-align:left}
+.setting-icon{width:72px;height:72px;border-radius:20px;display:grid;place-items:center;font-size:33px;border:1px solid rgba(255,255,255,.05)}
+.setting-icon.cyan{background:linear-gradient(135deg,#0f3440,#183d65);color:#27dffc}
+.setting-icon.yellow{background:linear-gradient(135deg,#3b2d17,#262342);color:#ffc629}
+.setting-icon.purple{background:linear-gradient(135deg,#3d1f4a,#55203b);color:#ce78ff}
+.setting-icon.green{background:linear-gradient(135deg,#10372b,#123a31);color:#39e78a}
+.setting-icon.blue{background:linear-gradient(135deg,#113344,#183957);color:#30daf6}
+.setting-icon.sky{background:linear-gradient(135deg,#18314e,#103947);color:#62a9ff}
+.setting-title-row{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+.setting-title{font-size:26px;font-weight:850}
+.setting-sub{color:#868b98;font-size:17px;margin-top:5px}
+.badge{border-radius:999px;padding:6px 13px;font-size:15px}
+.badge.green{background:rgba(44,211,118,.18);color:#4ae18d}
+.badge.cyan{background:rgba(0,204,234,.18);color:#24d5ef}
+.chevron{font-size:27px;color:#9ca1af;transition:.2s}
+.settings-card.open .chevron{transform:rotate(180deg)}
+.settings-content{display:none;padding:0 24px 24px}
+.settings-card.open .settings-content{display:block;animation:fade .2s ease}
+.divider{height:1px;background:#242833;margin-bottom:20px}
+.field{margin-bottom:14px}
+.field label{display:block;color:#9da2af;font-size:13px;margin-bottom:7px}
+.field input{width:100%;padding:14px 15px;border-radius:13px;border:1px solid #303541;background:#0c1018;color:white;outline:0}
+.row-actions{display:flex;gap:10px;flex-wrap:wrap}
+.mini-btn{border:1px solid #303746;border-radius:12px;background:#171c27;color:#e3e6ee;padding:12px 14px}
+.mini-btn.primary{border-color:#00b9d3;background:rgba(0,190,218,.1);color:#35dcf2}
+.mini-btn.danger{border-color:#6b2732;background:rgba(255,86,105,.08);color:#ff7a88}
+.option-row{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:14px 0;border-bottom:1px solid #242833}
+.option-row:last-child{border-bottom:0}
+.option-main b{display:block}
+.option-main span{display:block;color:#858b99;font-size:14px;margin-top:4px}
+.switch{width:52px;height:30px;border-radius:30px;background:#2b303b;position:relative;border:0}
+.switch::after{content:"";position:absolute;width:22px;height:22px;border-radius:50%;left:4px;top:4px;background:#fff;transition:.2s}
+.switch.on{background:#11b985}
+.switch.on::after{left:26px}
+.firebase-item,.session-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border:1px solid #2b303a;background:#10141d;border-radius:14px;margin-bottom:10px}
+.left-info{display:flex;align-items:center;gap:12px}
+.status-dot{width:10px;height:10px;border-radius:50%;background:#36df88}
+.status-dot.off{background:#ffbf28}
+.small-muted{color:#858b98;font-size:13px;margin-top:3px}
+.notice{padding:14px;border-radius:14px;background:rgba(36,208,243,.07);border:1px solid rgba(36,208,243,.2);color:#a9dfe8;margin-bottom:14px}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#111827;color:white;border:1px solid #293244;border-radius:14px;padding:14px 18px;opacity:0;pointer-events:none;transition:.25s;z-index:100}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:700px){
+  .header{padding:22px 18px 20px}.logo{width:55px;height:55px}.brand h1{font-size:27px}.brand p{font-size:15px}.logout{width:55px;height:55px}
+  .tabs{padding:18px 14px;gap:9px}.tab{font-size:14px;min-height:65px}
+  .stats{gap:10px;padding:24px 16px 18px}.stat{padding:20px 8px}.stat b{font-size:28px}
+  .control{margin:12px 16px 20px}.folder-create{margin:0 16px 24px;width:calc(100% - 32px)}.device-list{padding:0 16px}
+  .settings-wrap{padding:18px 16px 35px}.settings-head{grid-template-columns:62px 1fr auto;padding:20px 18px}.setting-icon{width:62px;height:62px}.setting-title{font-size:23px}.setting-sub{font-size:15px}
+}
+@media(max-width:520px){
+  .tabs{display:flex;overflow-x:auto}.tab{min-width:122px}
+  .stats{grid-template-columns:repeat(4,minmax(95px,1fr));overflow-x:auto}
+  .control-top{grid-template-columns:1fr 1fr}.search{grid-column:1/-1}
+  .device-head{grid-template-columns:68px 1fr}.avatar{width:68px;height:68px}.battery{grid-column:1/-1;justify-content:flex-end}
+  .info-grid{grid-template-columns:1fr}.device-actions{grid-template-columns:repeat(3,1fr)}
+  .settings-head{grid-template-columns:56px 1fr auto;gap:12px}.setting-icon{width:56px;height:56px;border-radius:17px;font-size:27px}.setting-title{font-size:21px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="brand">
+      <div class="logo">▣</div>
+      <div>
+        <h1 id="pageTitle">Device Panel</h1>
+        <p id="pageSubtitle">Monitor and manage connected devices</p>
+      </div>
+    </div>
+    <button class="logout" id="logoutBtn">↪</button>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-page="devices">▣ Device</button>
+    <button class="tab" data-page="inbox">▤ Work Inbox</button>
+    <button class="tab" data-page="tools">✦ Tools</button>
+    <button class="tab" data-page="settings">⚙</button>
+  </nav>
+
+  <section class="page active" id="devices">
+    <section class="stats">
+      <div class="stat cyan"><div class="icon">▣</div><b>11</b><span>TOTAL</span></div>
+      <div class="stat green"><div class="icon">◉</div><b>7</b><span>ONLINE</span></div>
+      <div class="stat orange"><div class="icon">⌁</div><b>4</b><span>OFFLINE</span></div>
+      <div class="stat purple"><div class="icon">⌘</div><b>2</b><span>PENDING</span></div>
+    </section>
+
+    <section class="control">
+      <div class="control-top">
+        <label class="search">⌕ <input id="search" placeholder="Search device"></label>
+        <button class="action ping" id="pingAll">⌁ Ping (11)</button>
+        <button class="action">☷ Filters</button>
+      </div>
+      <div class="control-bottom">
+        <div class="auto"><button class="check" id="autoBtn">✓</button><span>↻ Auto refresh</span></div>
+        <div class="clock"><span class="dot"></span><span id="clock">--:--:--</span></div>
+      </div>
+    </section>
+
+    <button class="folder-create">＋ Create Folder</button>
+    <main class="device-list" id="deviceList"></main>
+  </section>
+
+  <section class="page" id="inbox">
+    <div class="settings-wrap">
+      <div class="settings-card open">
+        <button class="settings-head">
+          <div class="setting-icon cyan">▤</div>
+          <div><div class="setting-title">Work Inbox</div><div class="setting-sub">App-generated work notifications only</div></div>
+          <div class="chevron">⌄</div>
+        </button>
+        <div class="settings-content">
+          <div class="divider"></div>
+          <div class="notice">No work messages yet. This section will show approved app alerts and reports.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="tools">
+    <div class="settings-wrap">
+      <div class="settings-card open">
+        <button class="settings-head">
+          <div class="setting-icon purple">✦</div>
+          <div><div class="setting-title">Tools</div><div class="setting-sub">Safe device administration utilities</div></div>
+          <div class="chevron">⌄</div>
+        </button>
+        <div class="settings-content">
+          <div class="divider"></div>
+          <div class="row-actions">
+            <button class="mini-btn primary">Send Sync Command</button>
+            <button class="mini-btn">Export Device List</button>
+            <button class="mini-btn">View Audit Log</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="settings">
+    <div class="settings-wrap">
+      <article class="settings-card">
+        <button class="settings-head">
+          <div class="setting-icon cyan">♢</div>
+          <div>
+            <div class="setting-title-row"><div class="setting-title">Profile</div><span class="badge green">Active</span></div>
+            <div class="setting-sub">Logged in as admin</div>
+          </div>
+          <div class="chevron">⌄</div>
+        </button>
+        <div class="settings-content">
+          <div class="divider"></div>
+          <div class="field"><label>Display name</label><input value="Panel Admin"></div>
+          <div class="field"><label>Email</label><input value="admin@example.com"></div>
+          <div class="row-actions"><button class="mini-btn primary">Save Profile</button><button class="mini-btn">Upload Avatar</button></div>
+        </div>
+      </article>
+
+      <article class="settings-card">
+        <button class="settings-head">
+          <div class="setting-icon yellow">▢</div>
+          <div><div class="setting-title">Device Vault</div><div class="setting-sub">Lock down device visibility</div></div>
+          <div class="chevron">⌄</div>
+        </button>
+        <div class="settings-content">
+          <div class="divider"></div>
+          <div class="notice">Vault mode hides selected device groups behind an extra unlock step.</div>
+          <div class="option-row"><div class="option-main"><b>Enable Vault Mode</b><span>Protect selected devices</span></div><button class="switch"></button></div>
+          <div class="option-row"><div class="option-main"><b>Require confirmation</b><span>Ask before viewing protected devices</span></div><button class="switch on"></button></div>
+        </div>
+      </article>
+
+      <article class="settings-card">
+        <button class="settings-head">
+          <div class="setting-icon purple">▤</div>
+          <div><div class="setting-title">Firebase Accounts</div><div class="setting-sub">2 configuration(s)</div></div>
+          <div class="chevron">⌄</div>
+        </button>
+        <div class="settings-content">
+          <div class="divider"></div>
+          <div class="firebase-item">
+            <div class="left-info"><span class="status-dot"></span><div><b>Primary Project</b><div class="small-muted">device-panel-main</div></div></div>
+            <span class="badge green">Active</span>
+          </div>
+          <div class="firebase-item">
+            <div class="left-info"><span class="status-dot off"></span><div><b>Backup Project</b><div class="small-muted">device-panel-backup</div></div></div>
+            <span class="badge">Inactive</span>
+          </div>
+          <div class="row-actions"><button class="mini-btn primary">Add Firebase Project</button><button class="mini-btn">Test Connection</button></div>
+        </div>
+      </article>
+
+      <article class="settings-card">
+        <button class="settings-head">
+          <div class="setting-icon green">♢</div>
+          <div><div class="setting-title">Security</div><div class="setting-sub">2FA and password settings</div></div>
+          <div class="chevron">⌄</div>
+        </button>
+        <div class="settings-content">
+          <div class="divider"></div>
+          <div class="option-row"><div class="option-main"><b>Two-factor authentication</b><span>Protect the admin account</span></div><button class="switch on"></button></div>
+          <div class="option-row"><div class="option-main"><b>Login alerts</b><span>Notify on new admin login</span></div><button class="switch on"></button></div>
+          <div class="row-actions" style="margin-top:15px"><button class="mini-btn">Change Password</button><button class="mini-btn danger">Sign Out All Sessions</button></div>
+        </div>
+      </article>
+
+      <article class="settings-card">
+        <button class="settings-head">
+          <div class="setting-icon blue">▣</div>
+          <div>
+            <div class="setting-title-row"><div class="setting-title">Active Sessions</div><span class="badge cyan">2 active</span></div>
+            <div class="setting-sub">2/2 devices logged in</div>
+          </div>
+          <div class="chevron">⌄</div>
+        </button>
+        <div class="settings-content">
+          <div class="divider"></div>
+          <div class="session-item">
+            <div class="left-info"><span class="status-dot"></span><div><b>iPhone 13</b><div class="small-muted">Safari iOS · Current session</div></div></div>
+            <span class="small-muted">Just now</span>
+          </div>
+          <div class="session-item">
+            <div class="left-info"><span class="status-dot"></span><div><b>Windows PC</b><div class="small-muted">Chrome · Admin login</div></div></div>
+            <button class="mini-btn danger">Revoke</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="settings-card">
+        <button class="settings-head">
+          <div class="setting-icon sky">◯</div>
+          <div>
+            <div class="setting-title-row"><div class="setting-title">Notifications</div><span class="badge green">Active</span></div>
+            <div class="setting-sub">Admin alerts and command results</div>
+          </div>
+          <div class="chevron">⌄</div>
+        </button>
+        <div class="settings-content">
+          <div class="divider"></div>
+          <div class="option-row"><div class="option-main"><b>Device offline alerts</b><span>Notify when a device stops reporting</span></div><button class="switch on"></button></div>
+          <div class="option-row"><div class="option-main"><b>Command result alerts</b><span>Show success and failure notifications</span></div><button class="switch on"></button></div>
+          <div class="option-row"><div class="option-main"><b>Email notifications</b><span>Send important security alerts</span></div><button class="switch"></button></div>
+        </div>
+      </article>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const devices=[
+{name:"+91 88099 41234",model:"V2336",version:"V4.2",group:"FIELD TEAM",status:"ONLINE",battery:85,last:"Just now"},
+{name:"+91 73503 72318",model:"SM-A146B",version:"V3.8",group:"SECURE",status:"STALE",battery:63,last:"18 min ago"},
+{name:"Warehouse Phone 03",model:"RMX3834",version:"V4.0",group:"STOCK",status:"ONLINE",battery:72,last:"2 min ago"}
+];
+
+const list=document.getElementById("deviceList");
+const toast=document.getElementById("toast");
+
+function showToast(text){
+ toast.textContent=text;toast.classList.add("show");
+ setTimeout(()=>toast.classList.remove("show"),1800);
+}
+
+function render(items){
+ list.innerHTML="";
+ items.forEach(d=>{
+  const card=document.createElement("article");
+  card.className="device-card";
+  card.innerHTML=`
+    <div class="device-head">
+      <div class="avatar">✕✕</div>
+      <div class="device-title"><h3>${d.name}</h3><div class="tags"><span class="tag">${d.model}</span><span class="tag purple">${d.version}</span><span class="tag blue">${d.group}</span><span class="tag orange">${d.status}</span></div></div>
+      <div class="battery">▭ ${d.battery}%</div>
+    </div>
+    <div class="info-grid"><div class="info red"><small>🔐 ENROLLMENT</small><strong>Active</strong></div><div class="info blue"><small>◷ LAST ACTIVE</small><strong>${d.last}</strong></div></div>
+    <div class="device-actions">
+      <button data-action="Ping"><span>♧</span>PING</button><button data-action="Note"><span>□</span>NOTE</button><button data-action="Folder"><span>▣</span>FOLDER</button><button data-action="Share"><span>⌯</span>SHARE</button><button data-action="Delete"><span>♜</span>DELETE</button>
+    </div>`;
+  card.querySelectorAll("[data-action]").forEach(btn=>btn.onclick=()=>showToast(`${btn.dataset.action}: ${d.name}`));
+  list.appendChild(card);
+ });
+}
+
+document.querySelectorAll(".tab").forEach(tab=>{
+ tab.addEventListener("click",()=>{
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  tab.classList.add("active");
+  document.getElementById(tab.dataset.page).classList.add("active");
+
+  const titles={
+   devices:["Device Panel","Monitor and manage connected devices"],
+   inbox:["Work Inbox","View approved app alerts and reports"],
+   tools:["Tools","Device administration utilities"],
+   settings:["Settings","Configure your preferences"]
+  };
+  document.getElementById("pageTitle").textContent=titles[tab.dataset.page][0];
+  document.getElementById("pageSubtitle").textContent=titles[tab.dataset.page][1];
+  window.scrollTo({top:0,behavior:"smooth"});
+ });
+});
+
+document.querySelectorAll(".settings-head").forEach(head=>{
+ head.onclick=()=>head.closest(".settings-card").classList.toggle("open");
+});
+
+document.querySelectorAll(".switch").forEach(sw=>{
+ sw.onclick=e=>{e.stopPropagation();sw.classList.toggle("on");showToast(sw.classList.contains("on")?"Setting enabled":"Setting disabled")};
+});
+
+document.querySelectorAll(".mini-btn").forEach(btn=>{
+ btn.onclick=()=>showToast(btn.textContent.trim());
+});
+
+document.getElementById("search").addEventListener("input",e=>{
+ const q=e.target.value.toLowerCase();
+ render(devices.filter(d=>d.name.toLowerCase().includes(q)||d.model.toLowerCase().includes(q)||d.group.toLowerCase().includes(q)));
+});
+document.getElementById("pingAll").onclick=()=>showToast("Ping queued for all devices");
+document.getElementById("logoutBtn").onclick=()=>showToast("Logout confirmation will appear here");
+document.getElementById("autoBtn").onclick=e=>{
+ e.currentTarget.textContent=e.currentTarget.textContent==="✓"?"":"✓";
+ showToast(e.currentTarget.textContent==="✓"?"Auto refresh enabled":"Auto refresh disabled");
+};
+setInterval(()=>document.getElementById("clock").textContent=new Date().toLocaleTimeString("en-IN",{hour12:false}),1000);
+render(devices);
+</script>
+</body>
+</html>
